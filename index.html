@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnóstico del Nivelatorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna de lectura (máx. 640px) bajo una cabecera de papel cuadriculado; una pregunta por pantalla con navegación fija abajo. */
+:root {
+  --bg: #f3f6f9;
+  --surface: #ffffff;
+  --ink: #132030;
+  --muted: #566476;
+  --line: #d4dce6;
+  --accent: #1d5f8f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1ecf5;
+  --ok: #1b7348;
+  --ok-soft: #e0f1e7;
+  --bad: #a8352a;
+  --warn: #8a5300;
+  --warn-soft: #f9eed9;
+  --grid: rgba(29, 95, 143, .08);
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --line: #2a3747;
+    --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+    --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --warn: #efb45c; --warn-soft: #36290f;
+    --grid: rgba(114, 180, 228, .07);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --line: #2a3747;
+  --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+  --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --warn: #efb45c; --warn-soft: #36290f;
+  --grid: rgba(114, 180, 228, .07);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 16px/1.55 var(--f-body);
+  -webkit-text-size-adjust: 100%;
+}
+.wrap {
+  max-width: 640px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 18px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.top .wrap { padding-block: 22px 18px; }
+.eyebrow {
+  margin: 0; color: var(--accent);
+  font: 600 11.5px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase;
+}
+h1 {
+  margin: 6px 0 4px; text-wrap: balance;
+  font: 700 clamp(30px, 7vw, 40px)/1.05 var(--f-display); letter-spacing: -.01em;
+}
+.meta { margin: 0; color: var(--muted); font-size: 14px; }
+.demo { background: var(--warn-soft); color: var(--warn); border-bottom: 1px solid var(--line); font-size: 14px; }
+.demo .wrap { padding-block: 10px; }
+main .wrap { padding-block: 22px 128px; }
+
+h2 { margin: 0 0 10px; font: 700 22px/1.2 var(--f-display); text-wrap: balance; }
+h3 { margin: 0; font: 600 15px/1.3 var(--f-body); }
+p { margin: 0; }
+.stack { display: grid; gap: 22px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 14px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.rules { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.units-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.units-table td { padding: 8px 0; border-top: 1px solid var(--line); }
+.units-table td:last-child { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; padding-left: 12px; }
+.units-table tr:first-child td { border-top: 0; }
+
+form { display: grid; gap: 6px; }
+label { font-weight: 600; font-size: 14px; margin-top: 8px; }
+input[type="text"], input[type="email"] {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 8px; padding: 12px 14px;
+}
+input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.hint { font-size: 13px; color: var(--muted); }
+.err { color: var(--bad); font-size: 14px; font-weight: 500; }
+.notice { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: 8px;
+  font: 600 15px/1 var(--f-body); cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn:focus-visible, .opt:focus-visible, .tick:focus-visible, .cell:focus-visible, .linkbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn.full { width: 100%; margin-top: 14px; }
+.linkbtn { background: none; border: 0; padding: 4px 0; font: 600 14px var(--f-body); color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Pregunta */
+.qhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.chip { font: 600 12px/1 var(--f-mono); letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 7px 10px; border-radius: 999px; }
+.count { font-size: 14px; color: var(--muted); }
+.count b { color: var(--ink); font-family: var(--f-mono); }
+.ticks { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 3px; margin: 14px 0 26px; }
+.tick { position: relative; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.tick::after { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: 2px; background: var(--line); }
+.tick.done::after { background: var(--accent); }
+.tick.cur::after { top: 6px; height: 10px; background: var(--ink); }
+.tick.ub { margin-left: 3px; }
+.qtext { margin: 0 0 20px; font: 500 19px/1.55 var(--f-body); outline: none; text-wrap: pretty; }
+.qtext math, .opt math { font-size: 1.12em; }
+.opts { display: grid; gap: 10px; }
+.opts.tf { grid-template-columns: 1fr 1fr; }
+.opt {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 58px;
+  text-align: left; padding: 12px 16px; cursor: pointer;
+  font: 400 16px/1.45 var(--f-body); color: var(--ink);
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r);
+  transition: border-color .12s, background-color .12s;
+}
+.opt .k {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--line); color: var(--muted);
+  font: 600 13px/1 var(--f-mono);
+}
+.opt .t { min-width: 0; overflow-x: auto; }
+.opt:hover { border-color: var(--accent); }
+.opt[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt[aria-checked="true"] .k { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tf .opt { justify-content: center; font-weight: 600; }
+.kbd { margin-top: 18px; font-size: 13px; color: var(--muted); }
+@media (pointer: coarse) { .kbd { display: none; } }
+
+.pager {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.pager-in { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding-top: 10px; }
+.pager .btn { width: 100%; }
+.pager .mid { font-size: 13px; text-align: center; white-space: nowrap; }
+
+/* Revisión */
+.cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 8px; margin-top: 10px; }
+.cell {
+  height: 46px; border-radius: 8px; cursor: pointer;
+  font: 600 14px var(--f-mono); font-variant-numeric: tabular-nums;
+  background: transparent; color: var(--muted); border: 1.5px dashed var(--line);
+}
+.cell.done { background: var(--accent-soft); border: 1.5px solid var(--accent); color: var(--ink); }
+.unitblock { display: grid; gap: 2px; }
+.sendbox { display: grid; gap: 12px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row .btn { flex: 1 1 160px; }
+
+/* Resultados */
+.score { display: grid; gap: 4px; }
+.big { font: 700 72px/1 var(--f-display); letter-spacing: -.02em; }
+.big span { font-size: 32px; color: var(--muted); font-weight: 600; }
+.urow { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: baseline; }
+.urow + .urow { border-top: 1px solid var(--line); padding-top: 12px; }
+.bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.wrong { display: flex; flex-wrap: wrap; gap: 6px; }
+.wrong span { font: 600 13px var(--f-mono); padding: 5px 9px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); }
+.ghead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table.grupo { width: 100%; border-collapse: collapse; font-size: 14px; }
+.grupo th, .grupo td { padding: 10px 12px; text-align: left; white-space: nowrap; }
+.grupo th { font: 600 11.5px/1.2 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.grupo td { border-top: 1px solid var(--line); }
+.grupo tbody tr:first-child td { border-top: 0; }
+.grupo .n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.grupo .tot { font-weight: 600; }
+.grupo tr.yo td { background: var(--accent-soft); }
+.grupo tfoot td { border-top: 1.5px solid var(--line); color: var(--muted); font-size: 13px; }
+.tag { font: 600 11px var(--f-mono); color: var(--accent); margin-left: 6px; }
+.texraw { font-family: var(--f-mono); font-size: .92em; }
+@media (max-width: 420px) {
+  .qtext { font-size: 17.5px; }
+  .big { font-size: 60px; }
+  .pager .btn { padding: 0 10px; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Nivelatorio de Matemáticas · Doctorado en Economía</p>
+    <h1>Prueba diagnóstica</h1>
+    <p class="meta">30 preguntas · 4 unidades · unos 40 minutos</p>
+  </div>
+</header>
+<div id="demo" class="demo" hidden><div class="wrap">Vista previa para el profesor: las respuestas no se guardan y la tabla del grupo incluye filas de ejemplo.</div></div>
+<main><div class="wrap" id="app"></div></main>
+<nav id="pager" class="pager" hidden aria-label="Navegación entre preguntas">
+  <div class="wrap pager-in">
+    <button type="button" class="btn" id="b-prev">← Anterior</button>
+    <button type="button" class="linkbtn mid" id="b-rev"></button>
+    <button type="button" class="btn primary" id="b-next">Siguiente →</button>
+  </div>
+</nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+(function () {
+"use strict";
+
+/* ====================== CONFIGURACIÓN ====================== */
+const CONFIG = {
+  // Pega aquí la URL de la aplicación web de Google Apps Script (termina en /exec):
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycby6DqY7cI3GvnkaQCgyCgFTtKcJcMYdYueHX0WofhDqEqVNYnpRxUzMGA07jh_k4JjIFw/exec",
+  // Cambia este identificador si reutilizas la página para otra prueba:
+  ID: "diagnostico-nivelatorio-2026",
+  // false = al terminar, el estudiante solo ve su propio puntaje:
+  MOSTRAR_TABLA_GRUPO: true,
+  DEMO: false,
+  CLAVE_DEMO: null
+};
+/* =========================================================== */
+
+const R = String.raw;
+const TF = ["Falso", "Verdadero"];
+const UNIDADES = [
+  { n: 1, nombre: "Álgebra, notación y ecuaciones", corto: "Álgebra", abbr: "Álg." },
+  { n: 2, nombre: "Funciones y cálculo diferencial", corto: "Funciones y derivadas", abbr: "Func." },
+  { n: 3, nombre: "Cálculo integral", corto: "Integrales", abbr: "Int." },
+  { n: 4, nombre: "Vectores, matrices y sistemas lineales", corto: "Matrices", abbr: "Mat." }
+];
+
+/* Las opciones están en el orden del documento; la página las baraja para cada estudiante.
+   "fijo: 1" deja la última opción siempre al final. Las respuestas correctas NO están en este archivo. */
+const P = [
+  // Unidad 1
+  { u: 1, t: R`Para todos los números reales $a$ y $b$, siempre se cumple que $(a+b)^2=a^2+b^2$.`, o: TF },
+  { u: 1, t: R`Sean $a$, $b$ y $c$ números reales con $b\neq 0$, $c\neq 0$ y $b+c\neq 0$. Se cumple que $\dfrac{a}{b+c}=\dfrac{a}{b}+\dfrac{a}{c}$.`, o: TF },
+  { u: 1, t: R`Si $a$, $b$ y $c$ son números reales con $a<b$ y $c<0$, entonces $ac>bc$.`, o: TF },
+  { u: 1, t: R`Para $x\neq 0$, la expresión $\dfrac{x^5\cdot x^{-1}}{x^2}$ es igual a:`, o: [R`$x^2$`, R`$x^{-2}$`, R`$x^3$`, R`$x^7$`] },
+  { u: 1, t: R`Sean $x$ y $y$ números reales positivos y $a$ un número real positivo con $a\neq 1$. ¿Cuál de las siguientes afirmaciones es falsa?`,
+    o: [R`$\log_a(xy)=\log_a(x)+\log_a(y)$`, R`$\log_a(x)=\dfrac{\ln(x)}{\ln(a)}$`, R`$\log_a(x+y)=\log_a(x)+\log_a(y)$`, R`$\log_a(a^x)=x$`] },
+  { u: 1, t: R`Sea $x$ un número real. El polinomio $x^2-x-6$ es igual a:`, o: [R`$(x-1)(x-6)$`, R`$(x-2)(x-3)$`, R`$(x+1)(x-6)$`, R`$(x+2)(x-3)$`] },
+  { u: 1, t: R`La suma $\displaystyle\sum_{i=1}^{4} i^2$ es igual a:`, o: [R`$30$`, R`$16$`, R`$10$`, R`$100$`] },
+  { u: 1, t: R`La serie $1+\dfrac{1}{2}+\dfrac{1}{4}+\dfrac{1}{8}+\cdots$ es igual a:`, o: [R`$2$`, R`$1$`, R`$\tfrac{3}{2}$`, "No converge"], fijo: 1 },
+  { u: 1, t: "Un precio de 100 sube 10 % y luego baja 10 %. El precio final es:", o: ["99", "100", "101", "90"] },
+  { u: 1, t: R`La desigualdad $|x-3|<2$ equivale a:`, o: [R`$1<x<5$`, R`$x<5$`, R`$-1<x<5$`, R`$x<1$ o $x>5$`] },
+  // Unidad 2
+  { u: 2, t: "¿Cuál de las siguientes afirmaciones es verdadera?",
+    o: ["Toda recta corta el eje vertical del plano cartesiano.", "Toda recta corta el eje horizontal del plano cartesiano.", "Dos rectas siempre se cortan en algún punto.", "La pendiente de una recta paralela al eje vertical no está definida."] },
+  { u: 2, t: R`El dominio de una función es el conjunto de valores de $x$ para los cuales la función está definida.`, o: TF },
+  { u: 2, t: R`El dominio de $f(x)=\sqrt{x-2}$ es:`, o: [R`$x\geq 2$`, R`$x>2$`, "Todos los números reales", R`$x\geq 0$`] },
+  { u: 2, t: R`La pendiente de la recta que pasa por los puntos $(1,\,2)$ y $(3,\,8)$ es:`, o: [R`$3$`, R`$\tfrac{1}{3}$`, R`$6$`, R`$2$`] },
+  { u: 2, t: "Una función es continua en un punto de su dominio si y solo si el límite en ese punto existe.", o: TF },
+  { u: 2, t: R`Si una función es continua en un punto $a$ de su dominio, entonces es derivable en ese punto.`, o: TF },
+  { u: 2, t: R`La derivada de $f(x)=e^{2x}$ es:`, o: [R`$2e^{2x}$`, R`$e^{2x}$`, R`$2x\,e^{2x-1}$`, R`$\tfrac{1}{2}e^{2x}$`] },
+  { u: 2, t: R`Si una función tiene un máximo o un mínimo local en un punto interior $c$ de su dominio, entonces $f'(c)=0$ o $f'(c)$ no existe.`, o: TF },
+  { u: 2, t: "Los signos de la primera derivada de una función permiten determinar sus puntos de inflexión.", o: TF },
+  { u: 2, t: "Los signos de la segunda derivada de una función permiten determinar si la función es cóncava o convexa.", o: TF },
+  // Unidad 3
+  { u: 3, t: R`La integral definida $\displaystyle\int_0^2 x\,dx$ es igual a:`, o: [R`$2$`, R`$4$`, R`$1$`, R`$0$`] },
+  { u: 3, t: R`La integral indefinida $\displaystyle\int e^{3x}\,dx$ es igual a:`, o: [R`$\tfrac{1}{3}e^{3x}+C$`, R`$3e^{3x}+C$`, R`$e^{3x}+C$`, R`$\dfrac{e^{3x+1}}{3x+1}+C$`] },
+  { u: 3, t: R`Usando sustitución, $\displaystyle\int 2x\,e^{x^2}\,dx$ es igual a:`, o: [R`$e^{x^2}+C$`, R`$x^2e^{x^2}+C$`, R`$2e^{x^2}+C$`, R`$2x\,e^{x^2}+C$`] },
+  { u: 3, t: R`Si el ingreso marginal es $I'(q)=10-2q$ e $I(0)=0$, el ingreso total es:`, o: [R`$I(q)=10q-q^2$`, R`$I(q)=-2$`, R`$I(q)=10-q^2$`, R`$I(q)=10q-2q^2$`] },
+  { u: 3, t: R`Si $f$ es continua, entonces $\dfrac{d}{dx}\displaystyle\int_a^x f(t)\,dt=f(x)$.`, o: TF },
+  // Unidad 4
+  { u: 4, t: R`El producto punto de los vectores $(1,\,2,\,3)$ y $(4,\,0,\,-1)$ es:`, o: [R`$1$`, R`$(4,\,0,\,-3)$`, R`$7$`, R`$0$`] },
+  { u: 4, t: R`Si $A$ es una matriz de tamaño $2\times 3$ y $B$ es de tamaño $3\times 2$, entonces $AB$ es de tamaño:`, o: [R`$2\times 2$`, R`$3\times 3$`, R`$2\times 3$`, "No está definido"], fijo: 1 },
+  { u: 4, t: R`Para matrices $A$ y $B$ tales que el producto $AB$ está definido, siempre se cumple que $(AB)^{T}=A^{T}B^{T}$.`, o: TF },
+  { u: 4, t: R`El determinante de la matriz $\begin{pmatrix} 2 & 1\\ 4 & 3 \end{pmatrix}$ es:`, o: [R`$2$`, R`$10$`, R`$-2$`, R`$5$`] },
+  { u: 4, t: R`Si $A$ es una matriz cuadrada con $\det(A)=0$, el sistema $Ax=b$ tiene solución única.`, o: TF }
+];
+
+const N = P.length;
+const NU = UNIDADES.map(u => P.filter(q => q.u === u.n).length);
+
+const LISTO = CONFIG.DEMO || /^https:\/\/script\.google\.com\/.+\/exec$/.test(String(CONFIG.SCRIPT_URL || "").trim());
+const KEY = "diag:" + CONFIG.ID;
+const $app = document.getElementById("app");
+const $pager = document.getElementById("pager");
+const $prev = document.getElementById("b-prev");
+const $next = document.getElementById("b-next");
+const $rev = document.getElementById("b-rev");
+if (CONFIG.DEMO) document.getElementById("demo").hidden = false;
+
+/* ---------- utilidades ---------- */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const cache = new Map();
+function fmt(s) {
+  if (cache.has(s)) return cache.get(s);
+  const html = String(s).split(/(\$[^$]+\$)/g).map(part => {
+    if (part.length > 2 && part[0] === "$" && part[part.length - 1] === "$") {
+      const tex = part.slice(1, -1);
+      if (window.katex) {
+        try { return window.katex.renderToString(tex, { output: "mathml", throwOnError: false }); } catch (e) { /* sigue */ }
+      }
+      return '<span class="texraw">' + esc(tex) + "</span>";
+    }
+    return esc(part);
+  }).join("");
+  cache.set(s, html);
+  return html;
+}
+function barajar() {
+  return P.map(q => {
+    const idx = q.o.map((_, k) => k);
+    if (q.o === TF) return idx;
+    const fijo = q.fijo || 0;
+    const libre = idx.slice(0, idx.length - fijo);
+    const cola = idx.slice(idx.length - fijo);
+    for (let k = libre.length - 1; k > 0; k--) {
+      const j = Math.floor(Math.random() * (k + 1));
+      [libre[k], libre[j]] = [libre[j], libre[k]];
+    }
+    return libre.concat(cola);
+  });
+}
+function nuevo() {
+  return { fase: "inicio", nombre: "", doc: "", correo: "", orden: null, resp: Array(N).fill(null), i: 0, inicio: null, resultado: null, rid: null, aviso: "" };
+}
+function cargar() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.resp) && s.resp.length === N && Array.isArray(s.orden || [])) return Object.assign(nuevo(), s);
+  } catch (e) { /* sin almacenamiento */ }
+  return nuevo();
+}
+function guardar() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin almacenamiento */ } }
+
+let S = cargar();
+if (S.fase === "pregunta" && !S.orden) S.fase = "inicio";
+let envio = { estado: "listo", msg: "" };
+let confirmar = false;
+let grupo = { estado: "inactivo", filas: [], oculto: false, hora: null };
+let timer = null;
+
+const respondidas = () => S.resp.filter(v => v !== null).length;
+const sinResponder = () => S.resp.map((v, i) => v === null ? i + 1 : null).filter(Boolean);
+
+/* ---------- pantallas ---------- */
+function vistaInicio() {
+  const filas = UNIDADES.map((u, k) => `<tr><td>${u.n}. ${esc(u.nombre)}</td><td>${NU[k]} ${NU[k] === 1 ? "pregunta" : "preguntas"}</td></tr>`).join("");
+  return `
+  <div class="stack">
+    <section class="panel">
+      <h2>Antes de empezar</h2>
+      <ul class="rules">
+        <li>Puedes responder en el orden que prefieras y cambiar tus respuestas hasta que envíes la prueba.</li>
+        <li>Una pregunta sin responder cuenta como incorrecta.</li>
+        <li>Solo puedes enviar la prueba una vez. Al enviarla verás tu puntaje y el del grupo.</li>
+        <li>Ten a mano lápiz y papel para los cálculos.</li>
+        <li>Si se cierra el navegador, tus respuestas se conservan en este dispositivo.</li>
+      </ul>
+      ${LISTO ? "" : `<p class="notice">La prueba todavía no está habilitada. Espera la indicación del profesor.</p>`}
+      <form id="f-inicio" novalidate>
+        <label for="nombre">Nombre completo</label>
+        <input type="text" id="nombre" autocomplete="name" maxlength="80" value="${esc(S.nombre)}" required>
+        <label for="doc">Número de documento de identidad</label>
+        <input type="text" id="doc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" value="${esc(S.doc)}" required>
+        <p class="hint">Cédula de ciudadanía, cédula de extranjería o pasaporte, sin puntos ni espacios.</p>
+        <label for="doc2">Confirma el número de documento</label>
+        <input type="text" id="doc2" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" value="${esc(S.doc)}" required>
+        <p class="hint">Tu documento solo se usa para comparar los resultados de esta prueba con los de la prueba final del nivelatorio. Lo ve únicamente el profesor y no aparece en la tabla del grupo.</p>
+        <label for="correo">Correo electrónico</label>
+        <input type="email" id="correo" autocomplete="email" inputmode="email" maxlength="120" value="${esc(S.correo)}" required>
+        <p class="hint">A este correo te llegará la retroalimentación de la prueba. Escríbelo con cuidado.</p>
+        <p class="err" id="err-inicio" hidden></p>
+        <button type="submit" class="btn primary full" ${LISTO ? "" : "disabled"}>Comenzar la prueba</button>
+      </form>
+    </section>
+    <section class="panel">
+      <h3>Contenido de la prueba</h3>
+      <table class="units-table"><tbody>${filas}</tbody></table>
+    </section>
+  </div>`;
+}
+
+function vistaPregunta() {
+  const i = S.i, q = P[i], u = UNIDADES[q.u - 1];
+  const orden = S.orden[i];
+  const tf = q.o === TF;
+  const letras = tf ? ["F", "V"] : ["A", "B", "C", "D", "E"];
+  const ticks = P.map((qq, k) => {
+    const cls = ["tick"];
+    if (S.resp[k] !== null) cls.push("done");
+    if (k === i) cls.push("cur");
+    if (k > 0 && P[k - 1].u !== qq.u) cls.push("ub");
+    return `<button type="button" class="${cls.join(" ")}" data-a="go" data-i="${k}" aria-label="Pregunta ${k + 1}${S.resp[k] !== null ? ", respondida" : ""}"${k === i ? ' aria-current="step"' : ""}></button>`;
+  }).join("");
+  const opts = orden.map((orig, pos) => {
+    const sel = S.resp[i] === orig;
+    return `<button type="button" class="opt" role="radio" aria-checked="${sel}" data-a="opt" data-k="${orig}">
+      <span class="k" aria-hidden="true">${letras[pos]}</span><span class="t">${fmt(q.o[orig])}</span></button>`;
+  }).join("");
+  return `
+    ${S.aviso ? `<p class="notice" style="margin-bottom:16px">${esc(S.aviso)}</p>` : ""}
+    <div class="qhead">
+      <span class="chip">U${u.n} · ${esc(u.corto)}</span>
+      <span class="count">Pregunta <b>${i + 1}</b> de ${N}</span>
+    </div>
+    <div class="ticks" role="group" aria-label="Avance de la prueba">${ticks}</div>
+    <article>
+      <h2 class="qtext" id="qtext" tabindex="-1">${fmt(q.t)}</h2>
+      <div class="opts${tf ? " tf" : ""}" role="radiogroup" aria-labelledby="qtext">${opts}</div>
+    </article>
+    <p class="kbd">Atajos: ${tf ? "F o V" : "A, B, C o D"} para responder; flechas ← → para moverte.</p>`;
+}
+
+function vistaRevision() {
+  const faltan = sinResponder();
+  const bloques = UNIDADES.map(u => {
+    const cells = P.map((q, k) => q.u !== u.n ? "" :
+      `<button type="button" class="cell${S.resp[k] !== null ? " done" : ""}" data-a="go" data-i="${k}" aria-label="Pregunta ${k + 1}${S.resp[k] !== null ? ", respondida" : ", sin responder"}">${k + 1}</button>`).join("");
+    return `<div class="unitblock"><h3>U${u.n} · ${esc(u.nombre)}</h3><div class="cells">${cells}</div></div>`;
+  }).join("");
+  let caja;
+  if (envio.estado === "enviando") {
+    caja = `<button type="button" class="btn primary" disabled>Enviando…</button>`;
+  } else if (confirmar) {
+    caja = `<p>Una vez enviadas, no podrás cambiar tus respuestas.${faltan.length ? ` Tienes ${faltan.length} sin responder.` : ""}</p>
+      <div class="row"><button type="button" class="btn" data-a="cancel">Seguir revisando</button>
+      <button type="button" class="btn primary" data-a="send">Sí, enviar</button></div>`;
+  } else {
+    caja = `<button type="button" class="btn primary" data-a="confirm">Enviar respuestas</button>`;
+  }
+  return `
+  <div class="stack">
+    <div>
+      <h2>Revisa antes de enviar</h2>
+      <p>Respondiste <b class="mono">${respondidas()}</b> de ${N} preguntas.${faltan.length ? ` Sin responder: <span class="mono">${faltan.join(", ")}</span>.` : " No te falta ninguna."}</p>
+      <p class="small muted" style="margin-top:6px">Toca un número para ir a esa pregunta.</p>
+    </div>
+    <section class="panel">${bloques}</section>
+    <section class="sendbox">
+      ${envio.estado === "error" ? `<p class="err" role="alert">${esc(envio.msg)}</p>` : ""}
+      ${caja}
+      <button type="button" class="linkbtn" data-a="back">Volver a las preguntas</button>
+    </section>
+  </div>`;
+}
+
+function vistaResultado() {
+  const r = S.resultado;
+  const pct = Math.round(100 * r.total / r.n);
+  const unidades = r.porUnidad.map(pu => {
+    const u = UNIDADES[pu.u - 1];
+    const w = pu.n ? Math.round(100 * pu.aciertos / pu.n) : 0;
+    return `<div class="urow"><span>U${u.n} · ${esc(u.nombre)}</span><span class="mono">${pu.aciertos}/${pu.n}</span>
+      <div class="bar" role="img" aria-label="${w} %"><i style="width:${w}%"></i></div></div>`;
+  }).join("");
+  let detalle = "";
+  if (Array.isArray(r.detalle)) {
+    const mal = r.detalle.map((ok, k) => ok ? null : k + 1).filter(Boolean);
+    detalle = `<section class="panel"><h3>Preguntas incorrectas o sin responder${CONFIG.DEMO ? ' <span class="tag">SOLO EN VISTA PREVIA</span>' : ""}</h3>
+      ${mal.length ? `<div class="wrong">${mal.map(n => `<span>${n}</span>`).join("")}</div>` : `<p>Ninguna.</p>`}</section>`;
+  }
+  return `
+  <div class="stack">
+    ${S.aviso ? `<p class="notice">${esc(S.aviso)}</p>` : ""}
+    <section class="panel score">
+      <p class="eyebrow">Tu resultado · ${esc(S.nombre)}</p>
+      <p class="big">${r.total}<span>/${r.n}</span></p>
+      <p class="muted">${pct} % de respuestas correctas</p>
+    </section>
+    <section class="panel"><h3>Por unidad</h3>${unidades}</section>
+    ${detalle}
+    ${CONFIG.MOSTRAR_TABLA_GRUPO ? vistaGrupo() : ""}
+  </div>`;
+}
+
+function vistaGrupo() {
+  let cuerpo;
+  if (grupo.oculto) {
+    cuerpo = `<p class="muted">El profesor compartirá los resultados del grupo.</p>`;
+  } else if (grupo.estado === "cargando" && !grupo.filas.length) {
+    cuerpo = `<p class="muted">Cargando resultados…</p>`;
+  } else if (grupo.estado === "error" && !grupo.filas.length) {
+    cuerpo = `<p class="err">No se pudieron cargar los resultados del grupo. Revisa tu conexión y toca «Actualizar».</p>`;
+  } else {
+    const filas = grupo.filas.slice().sort((a, b) => b.total - a.total || String(a.nombre).localeCompare(String(b.nombre), "es"));
+    let rank = 0, prev = null;
+    const trs = filas.map((f, k) => {
+      if (f.total !== prev) { rank = k + 1; prev = f.total; }
+      const yo = S.rid && f.id === S.rid;
+      return `<tr${yo ? ' class="yo"' : ""}><td class="n">${rank}</td><td>${esc(f.nombre)}${yo ? '<span class="tag">TÚ</span>' : ""}${f.ejemplo ? '<span class="tag">EJEMPLO</span>' : ""}</td>
+        <td class="n tot">${f.total}</td>${f.u.map(v => `<td class="n">${v}</td>`).join("")}</tr>`;
+    }).join("");
+    const m = filas.length;
+    const prom = m ? (filas.reduce((s, f) => s + f.total, 0) / m) : 0;
+    const promU = NU.map((n, k) => m ? Math.round(100 * filas.reduce((s, f) => s + f.u[k], 0) / (m * n)) : 0);
+    cuerpo = `<div class="tablewrap"><table class="grupo">
+      <thead><tr><th class="n">#</th><th>Estudiante</th><th class="n">Total /${N}</th>${UNIDADES.map((u, k) => `<th class="n">${u.abbr} /${NU[k]}</th>`).join("")}</tr></thead>
+      <tbody>${trs}</tbody>
+      <tfoot><tr><td></td><td>Promedio del grupo (${m})</td><td class="n">${prom.toFixed(1)}</td>${promU.map(p => `<td class="n">${p} %</td>`).join("")}</tr></tfoot>
+    </table></div>
+    <p class="small muted">${grupo.hora ? `Actualizado a las ${grupo.hora}. ` : ""}${CONFIG.DEMO ? "" : "La tabla se actualiza sola cada 30 segundos mientras tus compañeros terminan."}</p>`;
+  }
+  return `<section class="stack" style="gap:12px">
+    <div class="ghead"><h2 style="margin:0">Resultados del grupo</h2>
+    ${grupo.oculto ? "" : `<button type="button" class="btn" data-a="refresh"${grupo.estado === "cargando" ? " disabled" : ""}>Actualizar</button>`}</div>
+    ${cuerpo}
+  </section>`;
+}
+
+/* ---------- render ---------- */
+function render(foco) {
+  if (S.fase === "inicio") $app.innerHTML = vistaInicio();
+  else if (S.fase === "pregunta") $app.innerHTML = vistaPregunta();
+  else if (S.fase === "revision") $app.innerHTML = vistaRevision();
+  else $app.innerHTML = vistaResultado();
+
+  $pager.hidden = S.fase !== "pregunta";
+  if (S.fase === "pregunta") {
+    $prev.disabled = S.i === 0;
+    $next.textContent = S.i === N - 1 ? "Revisar y enviar" : "Siguiente →";
+    $rev.textContent = `${respondidas()}/${N} respondidas`;
+  }
+  if (foco) {
+    window.scrollTo(0, 0);
+    const h = document.getElementById("qtext");
+    if (h) { try { h.focus({ preventScroll: true }); } catch (e) { /* nada */ } }
+  }
+}
+
+function ir(i) {
+  S.i = Math.max(0, Math.min(N - 1, i));
+  S.fase = "pregunta"; S.aviso = ""; confirmar = false;
+  guardar(); render(true);
+}
+function aRevision() { S.fase = "revision"; S.aviso = ""; confirmar = false; guardar(); render(true); }
+
+/* ---------- inicio ---------- */
+function comenzar() {
+  const nombre = document.getElementById("nombre").value.trim().replace(/\s+/g, " ");
+  const limpiar = v => v.toUpperCase().replace(/[\s.\-]/g, "");
+  const doc = limpiar(document.getElementById("doc").value);
+  const doc2 = limpiar(document.getElementById("doc2").value);
+  const correo = document.getElementById("correo").value.trim().toLowerCase();
+  const err = document.getElementById("err-inicio");
+  let msg = "";
+  if (nombre.length < 3 || nombre.indexOf(" ") < 0) msg = "Escribe tu nombre y al menos un apellido.";
+  else if (!/^[0-9A-Z]{5,15}$/.test(doc)) msg = "Revisa el número de documento: solo números (y letras si es pasaporte), entre 5 y 15 caracteres.";
+  else if (doc !== doc2) msg = "Los dos números de documento no coinciden. Escríbelos de nuevo.";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) msg = "Revisa el correo: debe tener la forma nombre@dominio.com.";
+  if (msg) { err.textContent = msg; err.hidden = false; return; }
+  S.nombre = nombre; S.doc = doc; S.correo = correo;
+  if (!S.orden) S.orden = barajar();
+  if (!S.inicio) S.inicio = Date.now();
+  ir(S.i || 0);
+}
+
+/* ---------- calificación y red ---------- */
+function calificarLocal() {
+  const clave = CONFIG.CLAVE_DEMO;
+  const pu = UNIDADES.map((u, k) => ({ u: u.n, aciertos: 0, n: NU[k] }));
+  let total = 0;
+  const detalle = P.map((q, k) => {
+    const ok = S.resp[k] !== null && S.resp[k] === clave[k];
+    if (ok) { total++; pu[q.u - 1].aciertos++; }
+    return ok;
+  });
+  return { total, n: N, porUnidad: pu, detalle };
+}
+
+async function enviar() {
+  envio = { estado: "enviando", msg: "" }; render();
+  const payload = {
+    id: CONFIG.ID, nombre: S.nombre, doc: S.doc, correo: S.correo, respuestas: S.resp,
+    duracionMin: S.inicio ? (Date.now() - S.inicio) / 60000 : 0
+  };
+  try {
+    if (CONFIG.DEMO) {
+      await new Promise(r => setTimeout(r, 450));
+      S.resultado = calificarLocal(); S.rid = "demo";
+    } else {
+      const res = await fetch(CONFIG.SCRIPT_URL.trim(), { method: "POST", body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("http " + res.status);
+      const j = await res.json();
+      if (j.ok) {
+        S.resultado = j.resultado; S.rid = j.id; S.aviso = "";
+      } else if (j.error === "duplicado" && j.resultado) {
+        S.resultado = j.resultado; S.rid = j.id;
+        S.aviso = "Ya habías enviado esta prueba con este número de documento. Este es el resultado que quedó registrado.";
+      } else if (j.error === "cerrada") {
+        envio = { estado: "error", msg: "La prueba está cerrada y ya no recibe respuestas. Consulta con el profesor." }; render(); return;
+      } else {
+        envio = { estado: "error", msg: "El envío fue rechazado porque faltan datos. Vuelve al inicio, revisa tu nombre, documento y correo, e intenta de nuevo." }; render(); return;
+      }
+    }
+    S.fase = "resultado"; envio = { estado: "listo", msg: "" };
+    guardar(); render(true);
+    if (CONFIG.MOSTRAR_TABLA_GRUPO) { cargarGrupo(); iniciarActualizacion(); }
+  } catch (e) {
+    envio = { estado: "error", msg: "No se pudo enviar por un problema de conexión. Tus respuestas siguen guardadas en este dispositivo; toca «Enviar respuestas» de nuevo." };
+    render();
+  }
+}
+
+const EJEMPLOS = [
+  { id: "e1", nombre: "Laura Martínez", total: 26, u: [9, 9, 4, 4], ejemplo: true },
+  { id: "e2", nombre: "Andrés Pérez", total: 22, u: [8, 7, 4, 3], ejemplo: true },
+  { id: "e3", nombre: "Camila Rojas", total: 18, u: [7, 6, 2, 3], ejemplo: true },
+  { id: "e4", nombre: "Julián Torres", total: 15, u: [6, 5, 2, 2], ejemplo: true }
+];
+
+async function cargarGrupo() {
+  grupo.estado = "cargando"; if (S.fase === "resultado") render();
+  try {
+    if (CONFIG.DEMO) {
+      const yo = { id: "demo", nombre: S.nombre, total: S.resultado.total, u: S.resultado.porUnidad.map(p => p.aciertos) };
+      grupo.filas = EJEMPLOS.concat([yo]); grupo.oculto = false;
+    } else {
+      const res = await fetch(CONFIG.SCRIPT_URL.trim() + "?accion=resultados&t=" + Date.now());
+      if (!res.ok) throw new Error("http " + res.status);
+      const j = await res.json();
+      grupo.oculto = !!j.oculto;
+      grupo.filas = Array.isArray(j.filas) ? j.filas : [];
+    }
+    grupo.estado = "ok";
+    grupo.hora = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) {
+    grupo.estado = "error";
+  }
+  if (S.fase === "resultado") render();
+}
+function iniciarActualizacion() {
+  if (CONFIG.DEMO || timer) return;
+  timer = setInterval(() => { if (!document.hidden && !grupo.oculto) cargarGrupo(); }, 30000);
+}
+
+/* ---------- eventos ---------- */
+$app.addEventListener("submit", e => {
+  if (e.target.id === "f-inicio") { e.preventDefault(); comenzar(); }
+});
+$app.addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b) return;
+  const a = b.dataset.a;
+  if (a === "opt") {
+    const k = Number(b.dataset.k);
+    S.resp[S.i] = S.resp[S.i] === k ? null : k;
+    guardar(); render();
+    const again = $app.querySelector(`.opt[data-k="${k}"]`); if (again) again.focus({ preventScroll: true });
+  } else if (a === "go") ir(Number(b.dataset.i));
+  else if (a === "back") ir(S.i);
+  else if (a === "confirm") { confirmar = true; envio = { estado: "listo", msg: "" }; render(); }
+  else if (a === "cancel") { confirmar = false; render(); }
+  else if (a === "send") { confirmar = false; enviar(); }
+  else if (a === "refresh") cargarGrupo();
+});
+$prev.addEventListener("click", () => ir(S.i - 1));
+$next.addEventListener("click", () => S.i === N - 1 ? aRevision() : ir(S.i + 1));
+$rev.addEventListener("click", aRevision);
+document.addEventListener("keydown", e => {
+  if (S.fase !== "pregunta" || e.altKey || e.ctrlKey || e.metaKey) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  const q = P[S.i], key = e.key.toLowerCase();
+  if (e.key === "ArrowRight") { e.preventDefault(); S.i === N - 1 ? aRevision() : ir(S.i + 1); return; }
+  if (e.key === "ArrowLeft") { e.preventDefault(); if (S.i > 0) ir(S.i - 1); return; }
+  let pos = -1;
+  if (q.o === TF) pos = key === "f" ? 0 : key === "v" ? 1 : -1;
+  else pos = "abcde".indexOf(key);
+  if (pos >= 0 && pos < q.o.length) {
+    const k = S.orden[S.i][pos];
+    S.resp[S.i] = k; guardar(); render();
+  }
+});
+
+/* ---------- arranque ---------- */
+if (S.fase === "pregunta" && S.inicio) S.aviso = "Continúas donde quedaste. Tus respuestas anteriores se conservaron.";
+render();
+if (S.fase === "resultado" && CONFIG.MOSTRAR_TABLA_GRUPO) { cargarGrupo(); iniciarActualizacion(); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estadísticas del Diagnóstico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de informe (máx. 960px) bajo la misma cabecera cuadriculada de la prueba; resumen arriba, gráficos en el medio y detalle por pregunta y por estudiante al final. */
+:root {
+  --bg: #f3f6f9;
+  --surface: #ffffff;
+  --ink: #132030;
+  --muted: #566476;
+  --faint: #8794a3;
+  --line: #d4dce6;
+  --grid-line: #e6ebf1;
+  --accent: #1d5f8f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1ecf5;
+  --ok: #1b7348;
+  --ok-soft: #e0f1e7;
+  --bad: #a8352a;
+  --warn: #8a5300;
+  --warn-soft: #f9eed9;
+  --grid: rgba(29, 95, 143, .08);
+  --u1: #2a78d6; --u2: #eb6834; --u3: #1baf7a; --u4: #eda100;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --faint: #6f7d8d; --line: #2a3747; --grid-line: #212c39;
+    --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+    --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --warn: #efb45c; --warn-soft: #36290f;
+    --grid: rgba(114, 180, 228, .07);
+    --u1: #3987e5; --u2: #d95926; --u3: #199e70; --u4: #c98500;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --faint: #6f7d8d; --line: #2a3747; --grid-line: #212c39;
+  --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+  --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --warn: #efb45c; --warn-soft: #36290f;
+  --grid: rgba(114, 180, 228, .07);
+  --u1: #3987e5; --u2: #d95926; --u3: #199e70; --u4: #c98500;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--f-body); -webkit-text-size-adjust: 100%; }
+.wrap {
+  max-width: 960px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top {
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 18px 18px; border-bottom: 1px solid var(--line);
+}
+.top .wrap { padding-block: 22px 18px; }
+.eyebrow { margin: 0; color: var(--accent); font: 600 11.5px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+h1 { margin: 6px 0 4px; font: 700 clamp(28px, 6vw, 38px)/1.05 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+h2 { margin: 0; font: 700 21px/1.2 var(--f-display); text-wrap: balance; }
+h3 { margin: 0; font: 600 14.5px/1.35 var(--f-body); }
+p { margin: 0; }
+.meta, .muted { color: var(--muted); }
+.small { font-size: 13.5px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.demo { background: var(--warn-soft); color: var(--warn); border-bottom: 1px solid var(--line); font-size: 14px; }
+.demo .wrap { padding-block: 10px; }
+main .wrap { padding-block: 22px 64px; display: grid; gap: 30px; }
+section.blk { display: grid; gap: 12px; min-width: 0; }
+.blk > header { display: grid; gap: 4px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+
+/* acceso */
+.login { max-width: 440px; display: grid; gap: 10px; }
+label { font-weight: 600; font-size: 14px; }
+input[type="password"] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.err { color: var(--bad); font-size: 14px; font-weight: 500; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 8px; font: 600 14.5px/1 var(--f-body); cursor: pointer; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .55; cursor: default; }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* barra de estado */
+.status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--f-mono); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.pill.on { color: var(--ok); border-color: var(--ok); }
+.pill.on .dot { background: var(--ok); }
+
+/* resumen */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.tile .lab { font: 600 11px/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile .val { font: 700 30px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tile .val small { font-size: 16px; color: var(--muted); font-weight: 600; }
+.tile .sub { font-size: 13px; color: var(--muted); }
+
+/* gráficos */
+.chart { width: 100%; min-width: 0; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--muted); font: 500 11px var(--f-mono); }
+.chart .gl { stroke: var(--grid-line); stroke-width: 1; }
+.chart .base { stroke: var(--line); stroke-width: 1; }
+.chart .mean { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .meanlab { fill: var(--ink); font-weight: 600; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover + .bar, .chart .bar:hover { opacity: .82; }
+.multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px; }
+.multi .panel { display: grid; gap: 8px; }
+.uhead { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: 0; }
+
+/* barras horizontales (HTML) */
+.hb { display: grid; grid-template-columns: minmax(0, 13em) minmax(0, 1fr) 4.2em; gap: 6px 12px; align-items: center; }
+.hb .lab { font-size: 14px; min-width: 0; }
+.track { position: relative; height: 14px; border-radius: 4px; background:
+  linear-gradient(90deg, transparent calc(25% - .5px), var(--grid-line) calc(25% - .5px), var(--grid-line) calc(25% + .5px), transparent calc(25% + .5px),
+                         transparent calc(50% - .5px), var(--line) calc(50% - .5px), var(--line) calc(50% + .5px), transparent calc(50% + .5px),
+                         transparent calc(75% - .5px), var(--grid-line) calc(75% - .5px), var(--grid-line) calc(75% + .5px), transparent calc(75% + .5px)); }
+.track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+.hb .v { text-align: right; font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); color: var(--muted); font: 600 13px var(--f-body); padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.seg button + button { border-left: 1.5px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+
+.qbars { display: grid; gap: 0; }
+.qaxis, .qrow { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 3.6em 4.6em; gap: 10px; align-items: center; }
+.qaxis { padding: 0 8px 6px; font: 500 11px var(--f-mono); color: var(--faint); }
+.qaxis .ticks { display: flex; justify-content: space-between; }
+.qrow { width: 100%; border: 0; background: transparent; color: var(--ink); text-align: left; padding: 5px 8px; border-radius: 6px; cursor: pointer; font: inherit; }
+.qrow:hover { background: var(--bg); }
+.qrow .n { font: 600 13px var(--f-mono); }
+.qrow .v { text-align: right; font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+.qrow .d { text-align: right; font: 500 12px var(--f-mono); color: var(--muted); white-space: nowrap; }
+.qrow .d.flag { color: var(--warn); font-weight: 600; }
+
+/* detalle por pregunta */
+.items { display: grid; gap: 8px; }
+details.item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+details.item > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; gap: 6px; }
+details.item > summary::-webkit-details-marker { display: none; }
+.sumtop { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.sumtop b { color: var(--ink); font-family: var(--f-mono); }
+.utag { font: 600 11.5px/1 var(--f-mono); padding: 5px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--ink); }
+.flagtag { font: 600 11.5px/1 var(--f-mono); padding: 5px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.qt { font-size: 15px; line-height: 1.5; }
+.qt math, .ol math { font-size: 1.08em; }
+.itembody { padding: 4px 16px 16px; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.ol { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(80px, 1fr) 6.5em; gap: 8px 12px; align-items: center; }
+.ol .t { min-width: 0; overflow-x: auto; font-size: 14px; }
+.ol .t .tag { display: inline-block; margin-left: 6px; font: 600 11px var(--f-mono); }
+.ol .t .tag.ok { color: var(--ok); }
+.ol .t .tag.w { color: var(--warn); }
+.ol .c { text-align: right; font: 500 13px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.ol .c b { color: var(--ink); }
+.track.opt i { background: var(--faint); }
+.track.opt.ok i { background: var(--ok); }
+.track.opt.w i { background: var(--warn); }
+.note { font-size: 13.5px; color: var(--muted); }
+
+/* tabla de estudiantes */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table.est { width: 100%; border-collapse: collapse; font-size: 14px; }
+.est th, .est td { padding: 9px 12px; text-align: left; white-space: nowrap; }
+.est th { border-bottom: 1px solid var(--line); }
+.est th button { background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); font: 600 11.5px/1.2 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; }
+.est th button[aria-sort] { color: var(--ink); }
+.est td { border-top: 1px solid var(--line); }
+.est tbody tr:first-child td { border-top: 0; }
+.est .n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.est th.n { text-align: right; }
+.est td.low { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.chart .boxlab { fill: var(--ink); font: 600 12.5px var(--f-body); }
+.chart .boxsub { fill: var(--muted); font: 500 11px var(--f-mono); }
+.chart .med { stroke: var(--ink); stroke-width: 2.5; }
+.chart .whisk { stroke-width: 1.5; }
+.chart .meanpt { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.chart .outl { fill: var(--surface); stroke-width: 1.5; }
+.boxkey { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); align-items: center; }
+.boxkey svg { vertical-align: middle; margin-right: 6px; }
+table.desc { width: 100%; border-collapse: collapse; font-size: 14px; }
+.desc th, .desc td { padding: 9px 12px; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.desc th { font: 600 11.5px/1.2 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.desc th:first-child, .desc td:first-child { text-align: left; }
+.desc td { border-top: 1px solid var(--line); font-family: var(--f-mono); }
+.desc td:first-child { font-family: var(--f-body); }
+.desc tbody tr:first-child td { border-top: 0; }
+.desc tr.tot td { border-top: 1.5px solid var(--line); font-weight: 600; }
+.est .mail { display: block; font-size: 12px; color: var(--muted); }
+
+#tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg); font: 500 12.5px/1.4 var(--f-body); padding: 7px 10px; border-radius: 6px; max-width: 260px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.empty { padding: 28px 18px; text-align: center; color: var(--muted); }
+.texraw { font-family: var(--f-mono); font-size: .92em; }
+
+@media (max-width: 560px) {
+  .hb { grid-template-columns: minmax(0, 1fr) 4em; }
+  .hb .lab { grid-column: 1 / -1; margin-bottom: -4px; }
+  .qaxis, .qrow { grid-template-columns: 2.6em minmax(0, 1fr) 3.2em 4.2em; gap: 8px; padding-left: 4px; padding-right: 4px; }
+  .ol { grid-template-columns: minmax(0, 1fr) 6em; }
+  .ol .t { grid-column: 1 / -1; margin-bottom: -4px; }
+  .ol .track { grid-column: 1; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Nivelatorio de Matemáticas · Doctorado en Economía</p>
+    <h1>Estadísticas de la prueba diagnóstica</h1>
+    <p class="meta">Página para el profesor. Los datos vienen de la hoja de Google de la prueba.</p>
+  </div>
+</header>
+<div id="demo" class="demo" hidden><div class="wrap">Vista previa con 24 estudiantes simulados. En la versión publicada verás los datos reales de la hoja.</div></div>
+<main><div class="wrap" id="app"></div></main>
+<div id="tip" role="tooltip" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+(function () {
+"use strict";
+
+/* ====================== CONFIGURACIÓN ====================== */
+const CONFIG = {
+  // Pega aquí la misma URL de la aplicación web que usaste en index.html:
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycby6DqY7cI3GvnkaQCgyCgFTtKcJcMYdYueHX0WofhDqEqVNYnpRxUzMGA07jh_k4JjIFw/exec",
+  DEMO: false
+};
+/* =========================================================== */
+
+const R = String.raw;
+const TF = ["Falso", "Verdadero"];
+const UNIDADES = [
+  { n: 1, nombre: "Álgebra, notación y ecuaciones", corto: "Álgebra", abbr: "Álg." },
+  { n: 2, nombre: "Funciones y cálculo diferencial", corto: "Funciones y derivadas", abbr: "Func." },
+  { n: 3, nombre: "Cálculo integral", corto: "Integrales", abbr: "Int." },
+  { n: 4, nombre: "Vectores, matrices y sistemas lineales", corto: "Matrices", abbr: "Mat." }
+];
+
+/* Las opciones están en el orden del documento; la página las baraja para cada estudiante.
+   "fijo: 1" deja la última opción siempre al final. Las respuestas correctas NO están en este archivo. */
+const P = [
+  // Unidad 1
+  { u: 1, t: R`Para todos los números reales $a$ y $b$, siempre se cumple que $(a+b)^2=a^2+b^2$.`, o: TF },
+  { u: 1, t: R`Sean $a$, $b$ y $c$ números reales con $b\neq 0$, $c\neq 0$ y $b+c\neq 0$. Se cumple que $\dfrac{a}{b+c}=\dfrac{a}{b}+\dfrac{a}{c}$.`, o: TF },
+  { u: 1, t: R`Si $a$, $b$ y $c$ son números reales con $a<b$ y $c<0$, entonces $ac>bc$.`, o: TF },
+  { u: 1, t: R`Para $x\neq 0$, la expresión $\dfrac{x^5\cdot x^{-1}}{x^2}$ es igual a:`, o: [R`$x^2$`, R`$x^{-2}$`, R`$x^3$`, R`$x^7$`] },
+  { u: 1, t: R`Sean $x$ y $y$ números reales positivos y $a$ un número real positivo con $a\neq 1$. ¿Cuál de las siguientes afirmaciones es falsa?`,
+    o: [R`$\log_a(xy)=\log_a(x)+\log_a(y)$`, R`$\log_a(x)=\dfrac{\ln(x)}{\ln(a)}$`, R`$\log_a(x+y)=\log_a(x)+\log_a(y)$`, R`$\log_a(a^x)=x$`] },
+  { u: 1, t: R`Sea $x$ un número real. El polinomio $x^2-x-6$ es igual a:`, o: [R`$(x-1)(x-6)$`, R`$(x-2)(x-3)$`, R`$(x+1)(x-6)$`, R`$(x+2)(x-3)$`] },
+  { u: 1, t: R`La suma $\displaystyle\sum_{i=1}^{4} i^2$ es igual a:`, o: [R`$30$`, R`$16$`, R`$10$`, R`$100$`] },
+  { u: 1, t: R`La serie $1+\dfrac{1}{2}+\dfrac{1}{4}+\dfrac{1}{8}+\cdots$ es igual a:`, o: [R`$2$`, R`$1$`, R`$\tfrac{3}{2}$`, "No converge"], fijo: 1 },
+  { u: 1, t: "Un precio de 100 sube 10 % y luego baja 10 %. El precio final es:", o: ["99", "100", "101", "90"] },
+  { u: 1, t: R`La desigualdad $|x-3|<2$ equivale a:`, o: [R`$1<x<5$`, R`$x<5$`, R`$-1<x<5$`, R`$x<1$ o $x>5$`] },
+  // Unidad 2
+  { u: 2, t: "¿Cuál de las siguientes afirmaciones es verdadera?",
+    o: ["Toda recta corta el eje vertical del plano cartesiano.", "Toda recta corta el eje horizontal del plano cartesiano.", "Dos rectas siempre se cortan en algún punto.", "La pendiente de una recta paralela al eje vertical no está definida."] },
+  { u: 2, t: R`El dominio de una función es el conjunto de valores de $x$ para los cuales la función está definida.`, o: TF },
+  { u: 2, t: R`El dominio de $f(x)=\sqrt{x-2}$ es:`, o: [R`$x\geq 2$`, R`$x>2$`, "Todos los números reales", R`$x\geq 0$`] },
+  { u: 2, t: R`La pendiente de la recta que pasa por los puntos $(1,\,2)$ y $(3,\,8)$ es:`, o: [R`$3$`, R`$\tfrac{1}{3}$`, R`$6$`, R`$2$`] },
+  { u: 2, t: "Una función es continua en un punto de su dominio si y solo si el límite en ese punto existe.", o: TF },
+  { u: 2, t: R`Si una función es continua en un punto $a$ de su dominio, entonces es derivable en ese punto.`, o: TF },
+  { u: 2, t: R`La derivada de $f(x)=e^{2x}$ es:`, o: [R`$2e^{2x}$`, R`$e^{2x}$`, R`$2x\,e^{2x-1}$`, R`$\tfrac{1}{2}e^{2x}$`] },
+  { u: 2, t: R`Si una función tiene un máximo o un mínimo local en un punto interior $c$ de su dominio, entonces $f'(c)=0$ o $f'(c)$ no existe.`, o: TF },
+  { u: 2, t: "Los signos de la primera derivada de una función permiten determinar sus puntos de inflexión.", o: TF },
+  { u: 2, t: "Los signos de la segunda derivada de una función permiten determinar si la función es cóncava o convexa.", o: TF },
+  // Unidad 3
+  { u: 3, t: R`La integral definida $\displaystyle\int_0^2 x\,dx$ es igual a:`, o: [R`$2$`, R`$4$`, R`$1$`, R`$0$`] },
+  { u: 3, t: R`La integral indefinida $\displaystyle\int e^{3x}\,dx$ es igual a:`, o: [R`$\tfrac{1}{3}e^{3x}+C$`, R`$3e^{3x}+C$`, R`$e^{3x}+C$`, R`$\dfrac{e^{3x+1}}{3x+1}+C$`] },
+  { u: 3, t: R`Usando sustitución, $\displaystyle\int 2x\,e^{x^2}\,dx$ es igual a:`, o: [R`$e^{x^2}+C$`, R`$x^2e^{x^2}+C$`, R`$2e^{x^2}+C$`, R`$2x\,e^{x^2}+C$`] },
+  { u: 3, t: R`Si el ingreso marginal es $I'(q)=10-2q$ e $I(0)=0$, el ingreso total es:`, o: [R`$I(q)=10q-q^2$`, R`$I(q)=-2$`, R`$I(q)=10-q^2$`, R`$I(q)=10q-2q^2$`] },
+  { u: 3, t: R`Si $f$ es continua, entonces $\dfrac{d}{dx}\displaystyle\int_a^x f(t)\,dt=f(x)$.`, o: TF },
+  // Unidad 4
+  { u: 4, t: R`El producto punto de los vectores $(1,\,2,\,3)$ y $(4,\,0,\,-1)$ es:`, o: [R`$1$`, R`$(4,\,0,\,-3)$`, R`$7$`, R`$0$`] },
+  { u: 4, t: R`Si $A$ es una matriz de tamaño $2\times 3$ y $B$ es de tamaño $3\times 2$, entonces $AB$ es de tamaño:`, o: [R`$2\times 2$`, R`$3\times 3$`, R`$2\times 3$`, "No está definido"], fijo: 1 },
+  { u: 4, t: R`Para matrices $A$ y $B$ tales que el producto $AB$ está definido, siempre se cumple que $(AB)^{T}=A^{T}B^{T}$.`, o: TF },
+  { u: 4, t: R`El determinante de la matriz $\begin{pmatrix} 2 & 1\\ 4 & 3 \end{pmatrix}$ es:`, o: [R`$2$`, R`$10$`, R`$-2$`, R`$5$`] },
+  { u: 4, t: R`Si $A$ es una matriz cuadrada con $\det(A)=0$, el sistema $Ax=b$ tiene solución única.`, o: TF }
+];
+
+const N = P.length;
+const NU = UNIDADES.map(u => P.filter(q => q.u === u.n).length);
+const LISTO = CONFIG.DEMO || /^https:\/\/script\.google\.com\/.+\/exec$/.test(String(CONFIG.SCRIPT_URL || "").trim());
+const $app = document.getElementById("app");
+const $tip = document.getElementById("tip");
+if (CONFIG.DEMO) document.getElementById("demo").hidden = false;
+
+/* ---------- utilidades ---------- */
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+const cache = new Map();
+function fmt(s) {
+  if (cache.has(s)) return cache.get(s);
+  const html = String(s).split(/(\$[^$]+\$)/g).map(part => {
+    if (part.length > 2 && part[0] === "$" && part[part.length - 1] === "$") {
+      const tex = part.slice(1, -1);
+      if (window.katex) { try { return window.katex.renderToString(tex, { output: "mathml", throwOnError: false }); } catch (e) { /* sigue */ } }
+      return '<span class="texraw">' + esc(tex) + "</span>";
+    }
+    return esc(part);
+  }).join("");
+  cache.set(s, html);
+  return html;
+}
+const nf1 = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+const pct = x => Math.round(100 * x) + " %";
+const ucol = u => `var(--u${u})`;
+function mediana(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+function media(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0; }
+function cuantil(a, p) {
+  if (!a.length) return 0;
+  const s = a.slice().sort((x, y) => x - y), h = (s.length - 1) * p, lo = Math.floor(h);
+  return s[lo] + (h - lo) * ((s[lo + 1] !== undefined ? s[lo + 1] : s[lo]) - s[lo]);
+}
+function describir(vals, n) {
+  const q1 = cuantil(vals, .25), q3 = cuantil(vals, .75), iqr = q3 - q1;
+  const lf = q1 - 1.5 * iqr, uf = q3 + 1.5 * iqr;
+  const dentro = vals.filter(v => v >= lf && v <= uf);
+  return {
+    n, media: media(vals), mediana: cuantil(vals, .5), sd: desv(vals), q1, q3, iqr,
+    min: vals.length ? Math.min(...vals) : 0, max: vals.length ? Math.max(...vals) : 0,
+    wlo: dentro.length ? Math.min(...dentro) : q1, whi: dentro.length ? Math.max(...dentro) : q3,
+    atip: vals.filter(v => v < lf || v > uf)
+  };
+}
+function desv(a) { if (a.length < 2) return 0; const m = media(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1)); }
+function sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+function sset(k, v) { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { /* nada */ } }
+
+/* ---------- datos simulados para la vista previa ---------- */
+function simular() {
+  let seed = 20261118;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const normal = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  // dificultad de cada pregunta (más alta = más difícil)
+  const b = [ -.4, .3, -.2, -.9, .1, -1.0, -.6, .6, 1.1, .2,  .4, -.8, -.3, -1.1, 1.0, .5, -.5, .7, .3, -.4,  -.5, .6, 1.0, .9, .8,  -.2, .3, 1.2, -.3, .9 ];
+  const nombres = ["Laura Martínez", "Andrés Pérez", "Camila Rojas", "Julián Torres", "Valentina Gómez", "Santiago Herrera", "Daniela Castro", "Felipe Ramírez", "Mariana López", "Sebastián Díaz", "Natalia Vargas", "Juan Pablo Ortiz", "Isabela Moreno", "Mateo Sánchez", "Paula Jiménez", "Nicolás Restrepo", "Sara Cárdenas", "Tomás Mejía", "Lucía Arango", "David Ospina", "Carolina Ríos", "Esteban Muñoz", "Ana María Duque", "Alejandro Rincón"];
+  const K = CONFIG.CLAVE_DEMO;
+  return nombres.map(nombre => {
+    const th = normal();
+    const resp = P.map((q, i) => {
+      if (rnd() < .03) return null;
+      const p = 1 / (1 + Math.exp(-(1.5 * th - b[i] + .4)));
+      if (rnd() < p) return K[i];
+      const malas = q.o.map((_, k) => k).filter(k => k !== K[i]);
+      return rnd() < .62 ? malas[0] : malas[Math.floor(rnd() * malas.length)];
+    });
+    const u = [0, 0, 0, 0];
+    let total = 0;
+    resp.forEach((v, i) => { if (v === K[i]) { total++; u[P[i].u - 1]++; } });
+    const slug = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, ".");
+    return { nombre, correo: slug + "@ejemplo.edu.co", total, u, dur: Math.round((22 + 9 * rnd() + 4 * Math.max(0, -th)) * 10) / 10, resp };
+  });
+}
+
+/* ---------- estado ---------- */
+let datos = null;
+let estado = { cargando: false, error: "", hora: "" };
+let vista = { orden: "num", filtro: "todas", sortK: "total", sortDir: -1 };
+
+function calcular(d) {
+  const F = d.filas, n = F.length, K = d.clave;
+  const tot = F.map(f => f.total);
+  const s = { n, media: media(tot), mediana: mediana(tot), sd: desv(tot), min: n ? Math.min(...tot) : 0, max: n ? Math.max(...tot) : 0, dur: mediana(F.map(f => f.dur).filter(x => x > 0)) };
+  s.desc = UNIDADES.map((u, k) => Object.assign(describir(F.map(f => f.u[k]), NU[k]), { u: u.n, lab: `U${u.n} · ${u.corto}`, corto: `U${u.n}`, color: ucol(u.n) }))
+    .concat([Object.assign(describir(tot, N), { u: 0, lab: "Total de la prueba", corto: "Total", color: "var(--faint)" })]);
+  s.unidades = UNIDADES.map((u, k) => {
+    const v = F.map(f => f.u[k]);
+    return { u: u.n, n: NU[k], media: media(v), dist: Array.from({ length: NU[k] + 1 }, (_, j) => v.filter(x => x === j).length) };
+  });
+  s.items = P.map((q, i) => {
+    const cnt = q.o.map(() => 0);
+    let blank = 0, ok = 0;
+    F.forEach(f => {
+      const v = f.resp[i];
+      if (v === null || v === undefined || v < 0 || v >= q.o.length) blank++;
+      else { cnt[v]++; if (v === K[i]) ok++; }
+    });
+    return { i, u: q.u, p: n ? ok / n : 0, cnt, blank, D: null, clave: K[i] };
+  });
+  if (n >= 6) {
+    const ord = F.slice().sort((a, b) => a.total - b.total);
+    const k = Math.max(1, Math.round(.27 * n));
+    const low = ord.slice(0, k), up = ord.slice(n - k);
+    const pc = (g, i) => g.filter(f => f.resp[i] === K[i]).length / g.length;
+    s.items.forEach(it => { it.D = pc(up, it.i) - pc(low, it.i); });
+    s.grupoD = k;
+  }
+  s.items.forEach(it => { it.revisar = it.p < .5 || (it.D !== null && it.D < .2); });
+  return s;
+}
+
+/* ---------- gráficos SVG ---------- */
+function ticksY(max) {
+  const step = max <= 5 ? 1 : max <= 10 ? 2 : max <= 25 ? 5 : 10;
+  const top = Math.max(step, Math.ceil(max / step) * step);
+  const t = []; for (let v = 0; v <= top; v += step) t.push(v);
+  return { top, t };
+}
+function histograma(el, bins, o) {
+  const W = Math.max(240, Math.floor(el.clientWidth || 600)), H = o.h || 200;
+  const m = { l: 30, r: 8, t: o.mean != null ? 24 : 10, b: 26 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const Y = ticksY(Math.max(1, o.ymax || Math.max(...bins.map(b => b.c))));
+  const y = v => m.t + ih - ih * v / Y.top;
+  const bw = iw / bins.length, gap = 2;
+  const every = bw < 18 ? Math.ceil(18 / bw) + (bins.length > 20 ? 1 : 0) : 1;
+  let g = "";
+  Y.t.forEach(v => { g += `<line class="gl" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"/><text x="${m.l - 7}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`; });
+  bins.forEach((b, j) => {
+    const x0 = m.l + j * bw + gap / 2, w = Math.max(1, bw - gap);
+    const h = ih * b.c / Y.top, yt = m.t + ih - h;
+    if (b.c > 0) {
+      const r = Math.min(4, w / 2, h);
+      g += `<path class="bar" fill="${o.color}" d="M${x0},${m.t + ih} V${yt + r} Q${x0},${yt} ${x0 + r},${yt} H${x0 + w - r} Q${x0 + w},${yt} ${x0 + w},${yt + r} V${m.t + ih} Z"/>`;
+    }
+    g += `<rect class="hit" x="${m.l + j * bw}" y="${m.t}" width="${bw}" height="${ih}" data-tip="${esc(b.tip)}"/>`;
+    if (j % every === 0 || j === bins.length - 1 && (j % every) > every / 2) g += `<text x="${m.l + j * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(b.lab)}</text>`;
+  });
+  g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+  if (o.mean != null) {
+    const xm = m.l + iw * o.mean;
+    const anchor = o.mean > .78 ? "end" : o.mean < .22 ? "start" : "middle";
+    g += `<line class="mean" x1="${xm}" x2="${xm}" y1="${m.t - 4}" y2="${m.t + ih}"/><text class="meanlab" x="${xm + (anchor === "start" ? -2 : anchor === "end" ? 2 : 0)}" y="${m.t - 9}" text-anchor="${anchor}">${esc(o.meanLab)}</text>`;
+  }
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">${g}</svg>`;
+}
+function cajas(el, filas) {
+  const W = Math.max(260, Math.floor(el.clientWidth || 600));
+  const narrow = W < 520;
+  const lw = narrow ? 58 : 150, rowH = 46;
+  const m = { l: lw + 8, r: 14, t: 8, b: 28 };
+  const iw = W - m.l - m.r, H = m.t + rowH * filas.length + m.b;
+  const x = v => m.l + iw * v;
+  let g = "";
+  [0, .25, .5, .75, 1].forEach(t => { g += `<line class="${t === .5 ? "base" : "gl"}" x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H - m.b}"/><text x="${x(t)}" y="${H - 9}" text-anchor="middle">${Math.round(100 * t)}${t === 1 ? " %" : ""}</text>`; });
+  filas.forEach((d, j) => {
+    const cy = m.t + rowH * j + rowH / 2, bh = 20, n = d.n;
+    const sc = v => x(v / n);
+    const tip = `${d.lab}: mediana ${nf1.format(d.mediana)}, Q1 ${nf1.format(d.q1)}, Q3 ${nf1.format(d.q3)}, mín ${d.min}, máx ${d.max}, promedio ${nf1.format(d.media)} (de ${n})${d.atip.length ? `, ${d.atip.length} atípico${d.atip.length > 1 ? "s" : ""}` : ""}`;
+    if (j === 1) g += `<line class="base" x1="${m.l - lw}" x2="${W - m.r}" y1="${cy - rowH / 2}" y2="${cy - rowH / 2}" stroke-dasharray="2 3"/>`;
+    g += `<text class="boxlab" x="0" y="${cy - 2}">${esc(narrow ? d.corto : d.lab)}</text><text class="boxsub" x="0" y="${cy + 13}">de ${n} ${n === 1 ? "punto" : "puntos"}</text>`;
+    g += `<line class="whisk" stroke="${d.color}" x1="${sc(d.wlo)}" x2="${sc(d.q1)}" y1="${cy}" y2="${cy}"/><line class="whisk" stroke="${d.color}" x1="${sc(d.q3)}" x2="${sc(d.whi)}" y1="${cy}" y2="${cy}"/>`;
+    g += `<line class="whisk" stroke="${d.color}" x1="${sc(d.wlo)}" x2="${sc(d.wlo)}" y1="${cy - 6}" y2="${cy + 6}"/><line class="whisk" stroke="${d.color}" x1="${sc(d.whi)}" x2="${sc(d.whi)}" y1="${cy - 6}" y2="${cy + 6}"/>`;
+    const bw = Math.max(2, sc(d.q3) - sc(d.q1));
+    g += `<rect x="${sc(d.q1)}" y="${cy - bh / 2}" width="${bw}" height="${bh}" rx="3" fill="${d.color}" fill-opacity=".28" stroke="${d.color}" stroke-width="1.5"/>`;
+    g += `<line class="med" x1="${sc(d.mediana)}" x2="${sc(d.mediana)}" y1="${cy - bh / 2 - 2}" y2="${cy + bh / 2 + 2}"/>`;
+    d.atip.forEach(v => { g += `<circle class="outl" stroke="${d.color}" cx="${sc(v)}" cy="${cy}" r="4"/>`; });
+    const mx = sc(d.media);
+    g += `<path class="meanpt" d="M${mx},${cy - 5} L${mx + 5},${cy} L${mx},${cy + 5} L${mx - 5},${cy} Z"/>`;
+    g += `<rect class="hit" x="${m.l - lw}" y="${cy - rowH / 2}" width="${W - m.r - m.l + lw}" height="${rowH}" data-tip="${esc(tip)}"/>`;
+  });
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Diagramas de caja del puntaje total y por unidad, en porcentaje de acierto">${g}</svg>`;
+}
+function dibujar() {
+  if (!datos || !datos.s || !datos.s.n) return;
+  const s = datos.s;
+  const el = document.getElementById("h-total");
+  if (el) {
+    const bins = [];
+    for (let j = 0; j < 10; j++) {
+      const a = 3 * j, b = j === 9 ? 30 : 3 * j + 2;
+      const c = datos.filas.filter(f => f.total >= a && f.total <= b).length;
+      bins.push({ lab: `${a}–${b}`, c, tip: `${a} a ${b} puntos: ${c} ${c === 1 ? "estudiante" : "estudiantes"}` });
+    }
+    const jm = Math.min(9, Math.floor(s.media / 3));
+    const pos = (jm + (s.media - 3 * jm) / (jm === 9 ? 4 : 3)) / 10;
+    histograma(el, bins, { color: "var(--accent)", h: 220, mean: pos, meanLab: "Promedio " + nf1.format(s.media), aria: "Histograma del puntaje total" });
+  }
+  const eb = document.getElementById("box");
+  if (eb) cajas(eb, s.desc.slice(-1).concat(s.desc.slice(0, -1)));
+  const ymax = Math.max(...s.unidades.map(u => Math.max(...u.dist)));
+  s.unidades.forEach((un, k) => {
+    const e = document.getElementById("h-u" + un.u);
+    if (!e) return;
+    const bins = un.dist.map((c, j) => ({ lab: String(j), c, tip: `${j} de ${un.n} correctas: ${c} ${c === 1 ? "estudiante" : "estudiantes"}` }));
+    histograma(e, bins, { color: ucol(un.u), h: 170, ymax, mean: (un.media + .5) / (un.n + 1), meanLab: "Prom. " + nf1.format(un.media), aria: "Histograma de la unidad " + un.u });
+  });
+}
+
+/* ---------- vistas ---------- */
+function vistaLogin() {
+  const clave = sget("diag-prof") || "";
+  return `<section class="panel login">
+    <h2>Acceso</h2>
+    <p class="muted">Escribe la contraseña que definiste en el script de la hoja de Google (CLAVE_PROFESOR).</p>
+    ${LISTO ? "" : `<p class="err">Falta pegar la URL de la aplicación web en la configuración de este archivo (SCRIPT_URL).</p>`}
+    <form id="f-login" novalidate style="display:grid;gap:10px">
+      <label for="clave">Contraseña</label>
+      <input type="password" id="clave" autocomplete="current-password" value="${esc(clave)}">
+      ${estado.error ? `<p class="err" role="alert">${esc(estado.error)}</p>` : ""}
+      <button type="submit" class="btn primary" ${LISTO && !estado.cargando ? "" : "disabled"}>${estado.cargando ? "Cargando…" : "Ver estadísticas"}</button>
+    </form>
+  </section>`;
+}
+
+function vistaResumen(s) {
+  const tiles = [
+    ["Estudiantes", `${s.n}`, "respondieron la prueba"],
+    ["Promedio", `${nf1.format(s.media)}<small> /${N}</small>`, pct(s.media / N) + " de acierto"],
+    ["Mediana", `${nf1.format(s.mediana)}<small> /${N}</small>`, "la mitad está por encima"],
+    ["Desviación est.", nf1.format(s.sd), "puntos"],
+    ["Rango", `${s.min}–${s.max}`, "mínimo y máximo"],
+    ["Tiempo mediano", `${nf1.format(s.dur)}<small> min</small>`, "para responder"]
+  ];
+  return `<div class="tiles">${tiles.map(t => `<div class="tile"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span><span class="sub">${t[2]}</span></div>`).join("")}</div>`;
+}
+
+function vistaUnidades(s) {
+  const barras = s.unidades.map(un => {
+    const u = UNIDADES[un.u - 1], p = un.media / un.n;
+    return `<span class="lab"><span class="sw" style="background:${ucol(un.u)}"></span>U${u.n} · ${esc(u.nombre)}</span>
+      <span class="track" data-tip="U${u.n}: promedio ${nf1.format(un.media)} de ${un.n} (${pct(p)})"><i style="width:${(100 * p).toFixed(1)}%;background:${ucol(un.u)}"></i></span>
+      <span class="v">${pct(p)}</span>`;
+  }).join("");
+  const multi = s.unidades.map(un => {
+    const u = UNIDADES[un.u - 1];
+    return `<div class="panel"><div class="uhead"><h3><span class="sw" style="background:${ucol(un.u)}"></span>U${u.n} · ${esc(u.corto)}</h3>
+      <span class="small muted mono">${un.n} preguntas</span></div>
+      <div class="chart" id="h-u${un.u}"></div>
+      <p class="small muted">Correctas por estudiante (eje horizontal) y número de estudiantes (eje vertical).</p></div>`;
+  }).join("");
+  return `<section class="blk">
+    <header><h2>Resultados por unidad</h2><p class="muted">Porcentaje promedio de acierto en cada unidad. La línea central de cada barra marca el 50 %.</p></header>
+    <div class="panel"><div class="hb">${barras}</div></div>
+    <div class="multi">${multi}</div>
+  </section>`;
+}
+
+function vistaPreguntas(s) {
+  let items = s.items.slice();
+  if (vista.orden === "dif") items.sort((a, b) => a.p - b.p || a.i - b.i);
+  const filas = items.map(it => {
+    const dTxt = it.D === null ? "—" : "D " + nf2.format(it.D);
+    const flag = it.D !== null && it.D < .2;
+    return `<button type="button" class="qrow" data-a="ver" data-i="${it.i}" data-tip="P${it.i + 1} · U${it.u}: ${pct(it.p)} de acierto${it.D === null ? "" : " · discriminación " + nf2.format(it.D)}. Toca para ver el detalle.">
+      <span class="n">P${it.i + 1}</span>
+      <span class="track"><i style="width:${(100 * it.p).toFixed(1)}%;background:${ucol(it.u)}"></i></span>
+      <span class="v">${pct(it.p)}</span>
+      <span class="d${flag ? " flag" : ""}">${dTxt}</span></button>`;
+  }).join("");
+  return `<section class="blk">
+    <header><h2>Acierto por pregunta</h2>
+      <p class="muted">Porcentaje de estudiantes que respondió bien cada pregunta. D es el índice de discriminación: la diferencia de acierto entre el ${s.grupoD ? "27 % de mejores puntajes y el 27 % de peores puntajes" : "grupo alto y el bajo (requiere al menos 6 estudiantes)"}. Un D menor que 0,20 (en naranja) indica que la pregunta no separa bien a los estudiantes fuertes de los débiles.</p></header>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Orden">
+        <button type="button" data-a="orden" data-v="num" aria-pressed="${vista.orden === "num"}">Por número</button>
+        <button type="button" data-a="orden" data-v="dif" aria-pressed="${vista.orden === "dif"}">De menor a mayor acierto</button>
+      </div>
+      <div class="legend">${UNIDADES.map(u => `<span><span class="sw" style="background:${ucol(u.n)}"></span>U${u.n} ${esc(u.corto)}</span>`).join("")}</div>
+    </div>
+    <div class="panel" style="padding:12px 10px">
+      <div class="qaxis"><span></span><span class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100 %</span></span><span></span><span></span></div>
+      <div class="qbars">${filas}</div>
+    </div>
+  </section>`;
+}
+
+function vistaDetalle(s) {
+  const n = s.n;
+  const filtros = [["todas", "Todas"], ["1", "U1"], ["2", "U2"], ["3", "U3"], ["4", "U4"], ["revisar", "Para revisar"]];
+  const lista = s.items.filter(it => vista.filtro === "todas" || (vista.filtro === "revisar" ? it.revisar : String(it.u) === vista.filtro));
+  const html = lista.map(it => {
+    const q = P[it.i];
+    const malas = it.cnt.map((c, k) => ({ c, k })).filter(x => x.k !== it.clave).sort((a, b) => b.c - a.c);
+    const top = malas.length && malas[0].c > 0 ? malas[0].k : -1;
+    const ops = q.o.map((txt, k) => {
+      const c = it.cnt[k], p = n ? c / n : 0;
+      const cls = k === it.clave ? "ok" : k === top ? "w" : "";
+      const tag = k === it.clave ? '<span class="tag ok">✓ correcta</span>' : k === top ? '<span class="tag w">▲ error más frecuente</span>' : "";
+      return `<span class="t">${fmt(txt)}${tag}</span><span class="track opt ${cls}"><i style="width:${(100 * p).toFixed(1)}%"></i></span><span class="c"><b>${pct(p)}</b> (${c})</span>`;
+    }).join("");
+    const blank = it.blank ? `<span class="t muted">Sin responder</span><span class="track opt"><i style="width:${(100 * it.blank / n).toFixed(1)}%"></i></span><span class="c"><b>${pct(it.blank / n)}</b> (${it.blank})</span>` : "";
+    return `<details class="item" id="det-${it.i}">
+      <summary>
+        <span class="sumtop"><span class="utag">P${it.i + 1} · U${it.u}</span><span>Acierto <b>${pct(it.p)}</b></span><span>D <b>${it.D === null ? "—" : nf2.format(it.D)}</b></span>${it.revisar ? '<span class="flagtag">Para revisar</span>' : ""}</span>
+        <span class="qt">${fmt(q.t)}</span>
+      </summary>
+      <div class="itembody"><div class="ol">${ops}${blank}</div></div>
+    </details>`;
+  }).join("");
+  return `<section class="blk" id="detalle">
+    <header><h2>Análisis por pregunta</h2>
+      <p class="muted">Qué opción eligió el grupo en cada pregunta. La opción marcada como error más frecuente muestra la confusión concreta que conviene trabajar en clase. «Para revisar» agrupa las preguntas con menos de 50 % de acierto o con D menor que 0,20.</p></header>
+    <div class="seg" role="group" aria-label="Filtrar preguntas" style="align-self:start">${filtros.map(f => `<button type="button" data-a="filtro" data-v="${f[0]}" aria-pressed="${vista.filtro === f[0]}">${f[1]}</button>`).join("")}</div>
+    <div class="items">${html || `<p class="panel empty">Ninguna pregunta cumple este filtro.</p>`}</div>
+  </section>`;
+}
+
+function vistaEstudiantes() {
+  const cols = [["nombre", "Estudiante", false], ["total", "Total /" + N, true], ["u0", "Álg. %", true], ["u1", "Func. %", true], ["u2", "Int. %", true], ["u3", "Mat. %", true], ["dur", "Min", true]];
+  const val = (f, k) => k === "nombre" ? f.nombre.toLowerCase() : k === "total" ? f.total : k === "dur" ? f.dur : f.u[+k[1]] / NU[+k[1]];
+  const filas = datos.filas.slice().sort((a, b) => {
+    const x = val(a, vista.sortK), y = val(b, vista.sortK);
+    return (x < y ? -1 : x > y ? 1 : 0) * vista.sortDir || a.nombre.localeCompare(b.nombre, "es");
+  });
+  const th = cols.map(c => {
+    const on = vista.sortK === c[0];
+    return `<th${c[2] ? ' class="n"' : ""}><button type="button" data-a="sort" data-v="${c[0]}"${on ? ` aria-sort="${vista.sortDir < 0 ? "descending" : "ascending"}"` : ""}>${c[1]}${on ? (vista.sortDir < 0 ? " ↓" : " ↑") : ""}</button></th>`;
+  }).join("");
+  const trs = filas.map(f => `<tr><td>${esc(f.nombre)}<span class="mail">${esc(f.correo || "")}</span></td><td class="n"><b>${f.total}</b></td>
+    ${f.u.map((v, k) => { const p = v / NU[k]; return `<td class="n${p < .5 ? " low" : ""}">${Math.round(100 * p)}</td>`; }).join("")}
+    <td class="n">${f.dur ? nf1.format(f.dur) : "—"}</td></tr>`).join("");
+  return `<section class="blk">
+    <header><h2>Resultados por estudiante</h2><p class="muted">Porcentaje de acierto por unidad. Las celdas resaltadas están por debajo del 50 %. Toca un encabezado para ordenar.</p></header>
+    <div class="tablewrap"><table class="est"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>
+  </section>`;
+}
+
+function vistaCajas(s) {
+  const f1 = v => nf1.format(v);
+  const filas = s.desc.map(d => `<tr${d.u === 0 ? ' class="tot"' : ""}><td><span class="sw" style="background:${d.color}"></span>${esc(d.lab)}</td><td>${d.n}</td>
+    <td>${f1(d.media)}</td><td>${f1(d.mediana)}</td><td>${f1(d.sd)}</td><td>${d.min}</td><td>${f1(d.q1)}</td><td>${f1(d.q3)}</td><td>${d.max}</td><td>${f1(d.iqr)}</td><td>${Math.round(100 * d.media / d.n)} %</td></tr>`).join("");
+  const key = `<div class="boxkey">
+    <span><svg width="34" height="14" aria-hidden="true"><rect x="1" y="2" width="32" height="10" rx="2" fill="var(--faint)" fill-opacity=".28" stroke="var(--faint)" stroke-width="1.5"/></svg>Caja: del cuartil 1 al cuartil 3 (el 50 % central)</span>
+    <span><svg width="10" height="16" aria-hidden="true"><line x1="5" x2="5" y1="0" y2="16" stroke="var(--ink)" stroke-width="2.5"/></svg>Mediana</span>
+    <span><svg width="12" height="12" aria-hidden="true"><path d="M6,1 L11,6 L6,11 L1,6 Z" fill="var(--ink)"/></svg>Promedio</span>
+    <span><svg width="34" height="12" aria-hidden="true"><line x1="1" x2="33" y1="6" y2="6" stroke="var(--faint)" stroke-width="1.5"/><line x1="1" x2="1" y1="1" y2="11" stroke="var(--faint)" stroke-width="1.5"/><line x1="33" x2="33" y1="1" y2="11" stroke="var(--faint)" stroke-width="1.5"/></svg>Bigotes: datos hasta 1,5 veces el rango intercuartílico</span>
+    <span><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--surface)" stroke="var(--faint)" stroke-width="1.5"/></svg>Valor atípico</span>
+  </div>`;
+  return `<section class="blk">
+    <header><h2>Caja y bigotes</h2><p class="muted">El total y cada unidad en porcentaje de acierto, para compararlos en la misma escala aunque tengan distinto número de preguntas.</p></header>
+    <div class="panel" style="display:grid;gap:12px"><div class="chart" id="box"></div>${key}</div>
+  </section>
+  <section class="blk">
+    <header><h2>Estadística descriptiva</h2><p class="muted">Valores en puntos (número de respuestas correctas). Los cuartiles se calculan como la función CUARTIL.INC de Excel.</p></header>
+    <div class="tablewrap"><table class="desc"><thead><tr><th>Unidad</th><th>Preguntas</th><th>Media</th><th>Mediana</th><th>Desv. est.</th><th>Mín.</th><th>Q1</th><th>Q3</th><th>Máx.</th><th>Rango IQ</th><th>Acierto</th></tr></thead><tbody>${filas}</tbody></table></div>
+  </section>`;
+}
+
+function vistaPanel() {
+  const s = datos.s;
+  const estadoPill = datos.abierta === false ? `<span class="pill"><span class="dot"></span>Prueba cerrada</span>` : `<span class="pill on"><span class="dot"></span>Prueba abierta</span>`;
+  const barra = `<div class="status"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${estadoPill}<span class="small muted">${estado.hora ? "Actualizado a las " + estado.hora : ""}</span></div>
+    <div class="tools">${estado.error ? `<span class="err small">${esc(estado.error)}</span>` : ""}
+    ${CONFIG.DEMO ? "" : `<button type="button" class="btn" data-a="salir">Salir</button>`}
+    <button type="button" class="btn primary" data-a="actualizar" ${estado.cargando ? "disabled" : ""}>${estado.cargando ? "Actualizando…" : "Actualizar"}</button></div></div>`;
+  if (!s.n) return barra + `<section class="panel empty"><h2>Todavía no hay respuestas</h2><p style="margin-top:6px">Cuando los estudiantes envíen la prueba, toca «Actualizar» para ver sus resultados.</p></section>`;
+  return `${barra}
+    <section class="blk"><header><h2>Resumen</h2></header>${vistaResumen(s)}</section>
+    <section class="blk"><header><h2>Distribución del puntaje total</h2><p class="muted">Número de estudiantes en cada rango de puntaje, sobre ${N} puntos.</p></header>
+      <div class="panel"><div class="chart" id="h-total"></div></div></section>
+    ${vistaCajas(s)}
+    ${vistaUnidades(s)}
+    ${vistaPreguntas(s)}
+    ${vistaDetalle(s)}
+    ${vistaEstudiantes()}`;
+}
+
+function render() {
+  $app.innerHTML = datos ? vistaPanel() : vistaLogin();
+  dibujar();
+}
+
+/* ---------- carga ---------- */
+async function cargar(clave) {
+  estado.cargando = true; estado.error = ""; render();
+  try {
+    let d;
+    if (CONFIG.DEMO) {
+      await new Promise(r => setTimeout(r, 250));
+      d = { ok: true, clave: CONFIG.CLAVE_DEMO, unidad: CONFIG.UNIDAD_DEMO, abierta: true, filas: simular() };
+    } else {
+      const res = await fetch(CONFIG.SCRIPT_URL.trim(), { method: "POST", body: JSON.stringify({ accion: "estadisticas", clave }) });
+      if (!res.ok) throw new Error("http " + res.status);
+      d = await res.json();
+    }
+    if (!d.ok) {
+      estado.error = d.error === "clave" ? "La contraseña no coincide con la del script."
+        : d.error === "clave-sin-cambiar" ? "Primero cambia CLAVE_PROFESOR en el script y actualiza la implementación."
+        : "El script respondió con un error. Revisa que esté implementado con la versión más reciente.";
+      if (d.error === "clave") sset("diag-prof", null);
+      datos = null;
+    } else {
+      if (!CONFIG.DEMO) sset("diag-prof", clave);
+      datos = { filas: d.filas || [], clave: d.clave, abierta: d.abierta };
+      datos.s = calcular(datos);
+      estado.hora = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+    }
+  } catch (e) {
+    estado.error = "No se pudo conectar con la hoja de Google. Revisa tu conexión y la URL del script.";
+  }
+  estado.cargando = false;
+  render();
+}
+
+/* ---------- eventos ---------- */
+$app.addEventListener("submit", e => {
+  if (e.target.id === "f-login") { e.preventDefault(); cargar(document.getElementById("clave").value); }
+});
+$app.addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b) return;
+  const a = b.dataset.a, v = b.dataset.v;
+  if (a === "orden") { vista.orden = v; render(); }
+  else if (a === "filtro") { vista.filtro = v; render(); }
+  else if (a === "sort") { vista.sortDir = vista.sortK === v ? -vista.sortDir : (v === "nombre" ? 1 : -1); vista.sortK = v; render(); }
+  else if (a === "actualizar") cargar(sget("diag-prof") || "");
+  else if (a === "salir") { sset("diag-prof", null); datos = null; render(); }
+  else if (a === "ver") {
+    const i = Number(b.dataset.i);
+    const it = datos.s.items[i];
+    if (vista.filtro !== "todas" && !(vista.filtro === "revisar" ? it.revisar : String(it.u) === vista.filtro)) { vista.filtro = "todas"; render(); }
+    const d = document.getElementById("det-" + i);
+    if (d) { d.open = true; d.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); d.querySelector("summary").focus({ preventScroll: true }); }
+  }
+});
+function mostrarTip(e) {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (!t) { $tip.hidden = true; return; }
+  $tip.textContent = t.getAttribute("data-tip");
+  $tip.hidden = false;
+  const w = $tip.offsetWidth, h = $tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY - h - 12;
+  if (x + w > window.innerWidth - 8) x = e.clientX - w - 14;
+  if (x < 8) x = 8;
+  if (y < 8) y = e.clientY + 18;
+  $tip.style.left = x + "px"; $tip.style.top = y + "px";
+}
+document.addEventListener("pointermove", mostrarTip);
+document.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") mostrarTip(e); });
+document.addEventListener("pointerleave", () => { $tip.hidden = true; });
+window.addEventListener("scroll", () => { $tip.hidden = true; }, { passive: true });
+let rz = null;
+window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(dibujar, 120); });
+
+/* ---------- arranque ---------- */
+render();
+if (CONFIG.DEMO) cargar("");
+else if (sget("diag-prof") && LISTO) cargar(sget("diag-prof"));
+})();
+</script>
+</body>
+</html>
