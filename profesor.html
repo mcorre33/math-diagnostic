@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Estadísticas del Diagnóstico</title>
+<title>Estadísticas del Nivelatorio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -144,6 +144,9 @@ button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); 
 .qaxis .ticks { display: flex; justify-content: space-between; }
 .qrow { width: 100%; border: 0; background: transparent; color: var(--ink); text-align: left; padding: 5px 8px; border-radius: 6px; cursor: pointer; font: inherit; }
 .qrow:hover { background: var(--bg); }
+.qrow.tq { grid-template-columns: minmax(0, 13em) minmax(0, 1fr) 3.6em; cursor: default; }
+.qrow.tq .n { font: 500 13px var(--f-body); }
+@media (max-width: 560px) { .qrow.tq { grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) 3.2em; } }
 .qrow .n { font: 600 13px var(--f-mono); }
 .qrow .v { text-align: right; font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; }
 .qrow .d { text-align: right; font: 500 12px var(--f-mono); color: var(--muted); white-space: nowrap; }
@@ -223,11 +226,11 @@ table.desc { width: 100%; border-collapse: collapse; font-size: 14px; }
 <header class="top">
   <div class="wrap">
     <p class="eyebrow">Nivelatorio de Matemáticas · Doctorado en Economía</p>
-    <h1>Estadísticas de la prueba diagnóstica</h1>
+    <h1 id="titulo">Estadísticas de la prueba diagnóstica</h1>
     <p class="meta">Página para el profesor. Los datos vienen de la hoja de Google de la prueba.</p>
   </div>
 </header>
-<div id="demo" class="demo" hidden><div class="wrap">Vista previa con 24 estudiantes simulados. En la versión publicada verás los datos reales de la hoja.</div></div>
+<div id="demo" class="demo" hidden><div class="wrap">Vista previa con datos simulados: 24 estudiantes en la prueba diagnóstica y 12 parejas en el taller 1. En la versión publicada verás los datos reales de la hoja.</div></div>
 <main><div class="wrap" id="app"></div></main>
 <div id="tip" role="tooltip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
@@ -662,9 +665,130 @@ function vistaPanel() {
     ${vistaEstudiantes()}`;
 }
 
+
+/* ====================== TALLERES ====================== */
+const TALLERES_PROF = [{ id: "T1", nombre: "Taller 1" }];
+const ETQ = {
+  e1_P: "P*", e1_Q: "Q*", e1_Pc: "P_c", e1_Pp: "P_p", e1_Qt: "Q_t", e1_pcons: "% que pagan los consumidores", e1_rec: "Recaudo", e1_pe: "Pérdida de eficiencia", e1_tmax: "Impuesto que maximiza el recaudo", e1_f: "Fórmula de P_c", e1_m1: "Interpretación: incidencia", e1_m2: "Interpretación: recaudo y eficiencia",
+  e2_k: "k*", e2_y: "y*", e2_c: "c*", e2_koro: "k de la regla de oro", e2_soro: "s de la regla de oro", e2_k1: "k₁", e2_k2: "k₂", e2_anios: "Años hasta el 90 % de k*", e2_cs: "c* con s + 0,05", e2_f: "Fórmula de k*", e2_m1: "Interpretación: más ahorro", e2_m2: "Interpretación: convergencia",
+  e3_Q: "Q*", e3_P: "P*", e3_pi: "π*", e3_eps: "Elasticidad", e3_Pn: "P* con c + 5", e3_f: "Fórmula de Q*", e3_m1: "Interpretación: tramo elástico", e3_m2: "Interpretación: traslado al precio",
+  e4_amax: "Año de mayor crecimiento", e4_amin: "Año de menor crecimiento", e4_gm: "ḡ (promedio aritmético)", e4_sd: "Desviación estándar", e4_gc: "g_c (tasa compuesta)", e4_gl: "Tasa logarítmica", e4_gpc: "Tasa per cápita", e4_dup: "Años para duplicar", e4_y24: "PIB 2024 sin recesión", e4_f: "Fórmula de duplicación", e4_m1: "Interpretación: ḡ > g_c", e4_m2: "Interpretación: mejor medida"
+};
+const NOMBRE_EJ = ["Impuesto", "Solow", "Monopolio", "Datos del PIB"];
+let tab = "diag";
+let taller = { datos: null, cargando: false, error: "", hora: "", sortK: "auto", sortDir: -1 };
+
+function simularTaller() {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const ejs = [["e1", 20, 12], ["e2", 20, 12], ["e3", 20, 8], ["e4", 40, 12]];
+  const items = { e1: ["e1_P","e1_Q","e1_Pc","e1_Pp","e1_Qt","e1_pcons","e1_rec","e1_pe","e1_tmax","e1_f","e1_m1","e1_m2"], e2: ["e2_k","e2_y","e2_c","e2_koro","e2_soro","e2_k1","e2_k2","e2_anios","e2_cs","e2_f","e2_m1","e2_m2"], e3: ["e3_Q","e3_P","e3_pi","e3_eps","e3_Pn","e3_f","e3_m1","e3_m2"], e4: ["e4_amax","e4_amin","e4_gm","e4_sd","e4_gc","e4_gl","e4_gpc","e4_dup","e4_y24","e4_f","e4_m1","e4_m2"] };
+  const dif = { e1_tmax: .45, e1_pe: .7, e2_anios: .5, e2_cs: .55, e2_soro: .6, e3_eps: .5, e3_Pn: .6, e4_sd: .65, e4_gpc: .55, e4_y24: .4, e4_m1: .5, e2_m1: .55, e3_m1: .6 };
+  const nombres = ["Laura Martínez y Mateo Sánchez", "Andrés Pérez y Paula Jiménez", "Camila Rojas y Nicolás Restrepo", "Julián Torres y Sara Cárdenas", "Valentina Gómez y Tomás Mejía", "Santiago Herrera y Lucía Arango", "Daniela Castro y David Ospina", "Felipe Ramírez y Carolina Ríos", "Mariana López y Esteban Muñoz", "Sebastián Díaz y Ana María Duque", "Natalia Vargas y Alejandro Rincón", "Juan Pablo Ortiz e Isabela Moreno"];
+  const parejas = nombres.map((n, i) => {
+    const id = "P" + String(i + 1).padStart(2, "0");
+    if (i >= 9) return { id, integrantes: n.split(/ y | e /), entregado: false };
+    const hab = .55 + .4 * rnd(), det = {};
+    const por = ejs.map(([e]) => {
+      const its = items[e];
+      its.forEach(x => { det[x] = rnd() < hab * (dif[x] ? dif[x] / .75 : 1.1) ? 1 : 0; });
+      const nums = its.filter(x => !/_f$|_m\d$/.test(x)), res = 40 * nums.filter(x => det[x]).length / nums.length;
+      const fi = (det[e + "_f"] ? 10 : 0) + 10 * (det[e + "_m1"] + det[e + "_m2"]);
+      return { res: Math.round(res * 10) / 10, fi, cod: null };
+    });
+    const auto = Math.round(10 * por.reduce((a, p, k) => a + ejs[k][1] / 100 * (p.res + p.fi), 0)) / 10;
+    return { id, integrantes: n.split(/ y | e /), entregado: true, envios: 1 + Math.floor(rnd() * 3), notebook: rnd() < .85, fecha: new Date(Date.UTC(2026, 10, 25 + Math.floor(rnd() * 4), 14 + Math.floor(rnd() * 8))).toISOString(), auto, por, detalle: det };
+  });
+  return { ok: true, taller: "Taller 1", abierto: true, limite: "2026-11-28T23:59:00-05:00", ejercicios: ejs.map(([id, peso]) => ({ id, peso: peso / 100, items: items[id] })), parejas };
+}
+
+async function cargarTaller(id) {
+  taller.cargando = true; taller.error = ""; render();
+  try {
+    let d;
+    if (CONFIG.DEMO) { await new Promise(r => setTimeout(r, 200)); d = simularTaller(); }
+    else {
+      const res = await fetch(CONFIG.SCRIPT_URL.trim(), { method: "POST", body: JSON.stringify({ accion: "taller_estadisticas", taller: id, clave: sget("diag-prof") || "" }) });
+      if (!res.ok) throw new Error("http " + res.status);
+      d = await res.json();
+    }
+    if (!d.ok) taller.error = d.error === "taller" ? "El script todavía no tiene este taller. Revise que pegó Talleres.gs y publicó una versión nueva." : d.error === "clave" ? "La contraseña no coincide con la del script." : "El script respondió con un error. Revise que tenga Talleres.gs y la versión más reciente publicada.";
+    else { taller.datos = d; taller.hora = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }); }
+  } catch (e) {
+    taller.error = "No se pudo conectar con la hoja de Google. Revise la conexión y que el script tenga la línea de talleres en Code.gs.";
+  }
+  taller.cargando = false;
+  render();
+}
+
+function vistaTabs() {
+  const tabs = [["diag", "Prueba diagnóstica"]].concat(TALLERES_PROF.map(t => [t.id, t.nombre]));
+  return `<div class="seg" role="tablist" aria-label="Sección" style="align-self:start">${tabs.map(([id, n]) => `<button type="button" role="tab" data-a="tab" data-v="${id}" aria-pressed="${tab === id}">${esc(n)}</button>`).join("")}</div>`;
+}
+
+function vistaTaller() {
+  const d = taller.datos;
+  const barra = `<div class="status"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      ${d ? (d.abierto ? `<span class="pill on"><span class="dot"></span>Abierto</span>` : `<span class="pill"><span class="dot"></span>Cerrado</span>`) : ""}
+      <span class="small muted">${d ? "Fecha límite: " + esc(new Date(d.limite).toLocaleString("es-CO", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" })) : ""}${taller.hora ? " · Actualizado a las " + taller.hora : ""}</span></div>
+    <div class="tools">${taller.error ? `<span class="err small">${esc(taller.error)}</span>` : ""}
+    <button type="button" class="btn primary" data-a="actualizar-taller"${taller.cargando ? " disabled" : ""}>${taller.cargando ? "Actualizando…" : "Actualizar"}</button></div></div>`;
+  if (!d) return barra + (taller.cargando ? `<p class="muted">Cargando…</p>` : "");
+  const ent = d.parejas.filter(p => p.entregado), pend = d.parejas.filter(p => !p.entregado);
+  if (!d.parejas.length) return barra + `<section class="panel empty"><h2>No hay parejas registradas</h2><p style="margin-top:6px">Importe la pestaña «Parejas» en la hoja de Google.</p></section>`;
+  const autos = ent.map(p => p.auto);
+  const tiles = [
+    ["Entregas", `${ent.length}<small> /${d.parejas.length}</small>`, "parejas que enviaron"],
+    ["Con notebook", `${ent.filter(p => p.notebook).length}<small> /${ent.length}</small>`, "de las que enviaron"],
+    ["Promedio automático", ent.length ? `${nf1.format(media(autos))}<small> /70</small>` : "—", "resultados, fórmulas e interpretación"],
+    ["Mediana", ent.length ? `${nf1.format(mediana(autos))}<small> /70</small>` : "—", "la mitad está por encima"]
+  ];
+  const resumen = `<div class="tiles">${tiles.map(t => `<div class="tile"><span class="lab">${t[0]}</span><span class="val">${t[1]}</span><span class="sub">${t[2]}</span></div>`).join("")}</div>`;
+  const pendientes = pend.length ? `<section class="blk"><header><h2>Sin entrega</h2><p class="muted">Parejas que todavía no han enviado nada.</p></header>
+      <div class="panel"><p>${pend.map(p => `<b>${esc(p.id)}</b>: ${esc(p.integrantes.join(" y "))}`).join("<br>")}</p></div></section>` : "";
+  if (!ent.length) return barra + `<section class="blk"><header><h2>Resumen</h2></header>${resumen}</section>` + pendientes;
+  const porEj = d.ejercicios.map((e, k) => {
+    const r = media(ent.map(p => p.por[k].res)) / 40, f = media(ent.map(p => p.por[k].fi)) / 30;
+    return `<span class="lab"><b>E${k + 1}</b> · ${esc(NOMBRE_EJ[k] || e.id)} <span class="muted small">(${Math.round(100 * e.peso)} %)</span></span>
+      <span class="track" data-tip="E${k + 1}: resultados ${nf1.format(40 * r)} de 40 en promedio"><i style="width:${(100 * r).toFixed(1)}%;background:var(--u${k + 1})"></i></span><span class="v">${pct(r)}</span>
+      <span class="lab muted small" style="padding-left:1.1em">fórmula e interpretación</span>
+      <span class="track" data-tip="E${k + 1}: fórmula e interpretación ${nf1.format(30 * f)} de 30 en promedio"><i style="width:${(100 * f).toFixed(1)}%;background:var(--u${k + 1});opacity:.55"></i></span><span class="v">${pct(f)}</span>`;
+  }).join("");
+  const items = d.ejercicios.map((e, k) => `<h3 style="margin:10px 0 4px">E${k + 1} · ${esc(NOMBRE_EJ[k] || e.id)}</h3>` + e.items.map(id => {
+    const n = ent.length, ok = ent.filter(p => p.detalle && p.detalle[id] === 1).length, x = n ? ok / n : 0;
+    return `<div class="qrow tq" data-tip="${esc(ETQ[id] || id)}: ${ok} de ${n} parejas"><span class="n">${esc(ETQ[id] || id)}</span>
+      <span class="track"><i style="width:${(100 * x).toFixed(1)}%;background:var(--u${k + 1})"></i></span><span class="v">${pct(x)}</span></div>`;
+  }).join("")).join("");
+  const cols = [["id", "Pareja", false], ["auto", "Auto /70", true]].concat(d.ejercicios.map((e, k) => ["e" + k, "E" + (k + 1) + " /70", true]), [["envios", "Envíos", true], ["notebook", "Notebook", true], ["fecha", "Última entrega", false]]);
+  const val = (p, k) => k === "id" ? p.id : k === "auto" ? p.auto : k === "envios" ? p.envios : k === "notebook" ? (p.notebook ? 1 : 0) : k === "fecha" ? p.fecha : (p.por[+k.slice(1)].res + p.por[+k.slice(1)].fi);
+  const filas = ent.slice().sort((a, b) => { const x = val(a, taller.sortK), y = val(b, taller.sortK); return (x < y ? -1 : x > y ? 1 : 0) * taller.sortDir; });
+  const th = cols.map(c => { const on = taller.sortK === c[0]; return `<th${c[2] ? ' class="n"' : ""}><button type="button" data-a="sort-t" data-v="${c[0]}"${on ? ` aria-sort="${taller.sortDir < 0 ? "descending" : "ascending"}"` : ""}>${c[1]}${on ? (taller.sortDir < 0 ? " ↓" : " ↑") : ""}</button></th>`; }).join("");
+  const trs = filas.map(p => `<tr><td><b>${esc(p.id)}</b><span class="mail">${esc(p.integrantes.join(" y "))}</span></td><td class="n"><b>${nf1.format(p.auto)}</b></td>
+    ${p.por.map(x => { const v = x.res + x.fi; return `<td class="n${v < 35 ? " low" : ""}">${nf1.format(v)}</td>`; }).join("")}
+    <td class="n">${p.envios}</td><td class="n">${p.notebook ? "Sí" : `<span class="err">No</span>`}</td>
+    <td>${esc(new Date(p.fecha).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" }))}</td></tr>`).join("");
+  return `${barra}
+    <section class="blk"><header><h2>Resumen</h2><p class="muted">Calificación automática: resultados (40), fórmula e interpretación (30) por ejercicio, ponderada por el peso de cada ejercicio. El código (30) se agrega después del cierre.</p></header>${resumen}</section>
+    ${pendientes}
+    <section class="blk"><header><h2>Promedio por ejercicio</h2><p class="muted">Porcentaje promedio obtenido en cada componente automático: la barra de color fuerte es el de resultados y la clara, el de fórmula e interpretación.</p></header>
+      <div class="panel"><div class="hb">${porEj}</div></div></section>
+    <section class="blk"><header><h2>Acierto por pregunta</h2><p class="muted">Porcentaje de parejas que respondió bien cada resultado, fórmula y pregunta de interpretación.</p></header>
+      <div class="panel" style="padding:12px 10px">${items}</div></section>
+    <section class="blk"><header><h2>Resultados por pareja</h2><p class="muted">Puntaje automático por ejercicio, sobre 70. Las celdas resaltadas están por debajo del 50 %. Toque un encabezado para ordenar.</p></header>
+      <div class="tablewrap"><table class="est"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div></section>`;
+}
+
+function titulo() {
+  const t = TALLERES_PROF.find(x => x.id === tab);
+  const txt = t ? "Estadísticas del " + t.nombre : "Estadísticas de la prueba diagnóstica";
+  document.getElementById("titulo").textContent = txt;
+  document.title = txt;
+}
 function render() {
-  $app.innerHTML = datos ? vistaPanel() : vistaLogin();
-  dibujar();
+  titulo();
+  if (!datos) { $app.innerHTML = vistaLogin(); return; }
+  $app.innerHTML = vistaTabs() + (tab === "diag" ? vistaPanel() : vistaTaller());
+  if (tab === "diag") dibujar();
 }
 
 /* ---------- carga ---------- */
@@ -711,7 +835,10 @@ $app.addEventListener("click", e => {
   else if (a === "filtro") { vista.filtro = v; render(); }
   else if (a === "sort") { vista.sortDir = vista.sortK === v ? -vista.sortDir : (v === "nombre" ? 1 : -1); vista.sortK = v; render(); }
   else if (a === "actualizar") cargar(sget("diag-prof") || "");
-  else if (a === "salir") { sset("diag-prof", null); datos = null; render(); }
+  else if (a === "tab") { tab = v; render(); if (v !== "diag" && (!taller.datos || taller.datos.taller !== (TALLERES_PROF.find(t => t.id === v) || {}).nombre)) cargarTaller(v); }
+  else if (a === "actualizar-taller") cargarTaller(tab);
+  else if (a === "sort-t") { taller.sortDir = taller.sortK === v ? -taller.sortDir : (v === "id" || v === "fecha" ? 1 : -1); taller.sortK = v; render(); }
+  else if (a === "salir") { sset("diag-prof", null); datos = null; taller.datos = null; tab = "diag"; render(); }
   else if (a === "ver") {
     const i = Number(b.dataset.i);
     const it = datos.s.items[i];

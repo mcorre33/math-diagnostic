@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taller del Nivelatorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de trabajo (máx. 780px) con la misma cabecera cuadriculada de la prueba; barra fija arriba con el avance por ejercicio y el envío al final. */
+:root {
+  --bg: #f3f6f9; --surface: #ffffff; --ink: #132030; --muted: #566476; --line: #d4dce6;
+  --accent: #1d5f8f; --accent-ink: #ffffff; --accent-soft: #e1ecf5;
+  --ok: #1b7348; --ok-soft: #e0f1e7; --bad: #a8352a; --bad-soft: #f8e4e1; --warn: #8a5300; --warn-soft: #f9eed9;
+  --grid: rgba(29, 95, 143, .08); --code-bg: #eef2f6;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --line: #2a3747;
+    --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+    --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --bad-soft: #3a1d1a; --warn: #efb45c; --warn-soft: #36290f;
+    --grid: rgba(114, 180, 228, .07); --code-bg: #0f1822; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151e; --surface: #16202b; --ink: #e5ecf3; --muted: #97a6b6; --line: #2a3747;
+  --accent: #72b4e4; --accent-ink: #0a1620; --accent-soft: #1b3245;
+  --ok: #63cf98; --ok-soft: #163327; --bad: #f08a7e; --bad-soft: #3a1d1a; --warn: #efb45c; --warn-soft: #36290f;
+  --grid: rgba(114, 180, 228, .07); --code-bg: #0f1822; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--f-body); -webkit-text-size-adjust: 100%; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 780px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top { background-color: var(--surface); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 18px 18px; border-bottom: 1px solid var(--line); }
+.top .wrap { padding-block: 22px 18px; }
+.eyebrow { margin: 0; color: var(--accent); font: 600 11.5px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+h1 { margin: 6px 0 4px; font: 700 clamp(30px, 7vw, 40px)/1.05 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+h2 { margin: 0; font: 700 24px/1.15 var(--f-display); text-wrap: balance; }
+h3 { margin: 0; font: 600 15px/1.35 var(--f-body); }
+p { margin: 0; }
+.meta, .muted { color: var(--muted); }
+.small { font-size: 14px; }
+.demo { background: var(--warn-soft); color: var(--warn); border-bottom: 1px solid var(--line); font-size: 14px; }
+.demo .wrap { padding-block: 10px; }
+main .wrap { padding-block: 22px 80px; display: grid; gap: 28px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.notice { border-radius: 8px; padding: 12px 14px; font-size: 14.5px; }
+.notice.warn { background: var(--warn-soft); color: var(--warn); }
+.notice.ok { background: var(--ok-soft); color: var(--ok); }
+.notice.bad { background: var(--bad-soft); color: var(--bad); }
+code, .mono { font-family: var(--f-mono); font-size: .92em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+
+/* barra de avance */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; gap: 8px; align-items: center; padding-block: 8px; overflow-x: auto; }
+.bar a { flex: none; display: inline-flex; gap: 6px; align-items: center; text-decoration: none; color: var(--ink); font: 600 13px var(--f-body); padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.bar a .c { font: 600 12px var(--f-mono); color: var(--muted); }
+.bar a.full { border-color: var(--ok); }
+.bar a.full .c { color: var(--ok); }
+
+/* ejercicios */
+section.ej { display: grid; gap: 14px; scroll-margin-top: 64px; min-width: 0; }
+.enun p, .field label, .opt span { overflow-wrap: anywhere; }
+.panel > *, .enun > *, .params > *, .formula > * { min-width: 0; }
+.texraw { overflow-wrap: anywhere; }
+.ejhead { display: grid; gap: 4px; }
+.chip { justify-self: start; font: 600 12px/1 var(--f-mono); letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 7px 10px; border-radius: 999px; }
+.enun { display: grid; gap: 10px; font-size: 15.5px; }
+.enun .eq { text-align: center; overflow-x: auto; padding: 4px 0; }
+.enun math { font-size: 1.08em; }
+.params { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; display: grid; gap: 8px; }
+.params .vals { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 600 15px var(--f-mono); font-variant-numeric: tabular-nums; }
+.params .py { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.params .py code { background: var(--surface); overflow-x: auto; max-width: 100%; white-space: nowrap; }
+.sub { font: 600 11.5px/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px 14px; }
+.field { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.field label { font-size: 14px; font-weight: 500; line-height: 1.35; }
+.field label math { font-size: 1.05em; }
+input[type="text"] { width: 100%; font: 500 16px var(--f-mono); color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; padding: 10px 12px; font-variant-numeric: tabular-nums; }
+input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input:disabled { opacity: .7; }
+.field.bien input { border-color: var(--ok); }
+.field.mal input { border-color: var(--bad); }
+.formula { display: grid; gap: 6px; }
+.preview { min-height: 44px; border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; overflow-x: auto; font-size: 17px; }
+.preview.err { color: var(--bad); font-size: 14px; border-color: var(--bad); }
+.preview.vacio { color: var(--muted); font-size: 14px; }
+ul.tareas { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
+.mc { display: grid; gap: 8px; }
+.mc legend { font-size: 15px; font-weight: 500; margin-bottom: 6px; padding: 0; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.opt { display: flex; gap: 12px; align-items: flex-start; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; font-size: 15px; line-height: 1.45; }
+.opt input { margin: 3px 0 0; accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* datos */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; max-height: 320px; }
+table.datos { width: 100%; border-collapse: collapse; font: 500 13.5px var(--f-mono); font-variant-numeric: tabular-nums; }
+.datos th, .datos td { padding: 6px 12px; text-align: right; white-space: nowrap; }
+.datos th { position: sticky; top: 0; background: var(--surface); color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+.datos td { border-top: 1px solid var(--line); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 8px; font: 600 15px/1 var(--f-body); cursor: pointer; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13.5px; }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.login { max-width: 460px; }
+.resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.resumen div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; display: grid; gap: 2px; }
+.resumen b { font: 600 18px var(--f-mono); }
+.demo-cal { font-size: 14px; display: grid; gap: 4px; }
+.texraw { font-family: var(--f-mono); font-size: .92em; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Nivelatorio de Matemáticas · Doctorado en Economía</p>
+    <h1 id="titulo">Taller 1</h1>
+    <p class="meta" id="sub">Unidades 1 y 2 · en parejas · cuatro ejercicios aplicados</p>
+  </div>
+</header>
+<div id="demo" class="demo" hidden><div class="wrap">Vista previa para el profesor: entre con cualquier número de documento. Las respuestas no se guardan y, al enviar, se muestra la calificación automática (los estudiantes no la ven antes del cierre).</div></div>
+<nav class="bar" id="bar" hidden aria-label="Ejercicios"><div class="wrap" id="barin"></div></nav>
+<main><div class="wrap" id="app"></div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+/* ===== Fórmulas en notación de Python: análisis, evaluación y conversión a LaTeX ===== */
+var Formula = (function () {
+  var FUNCS = { log: Math.log, ln: Math.log, exp: Math.exp, sqrt: Math.sqrt };
+  var GRIEGAS = { alfa: "\\alpha", alpha: "\\alpha", delta: "\\delta" };
+
+  function tokenizar(src) {
+    var s = String(src || "").replace(/\b(math|np|numpy|sp|sympy)\./g, "").replace(/\s+/g, "");
+    var t = [], i = 0;
+    while (i < s.length) {
+      var ch = s[i];
+      if (/[0-9.,]/.test(ch)) {
+        var m = s.slice(i).match(/^(\d+([.,]\d+)?|[.,]\d+)([eE][+-]?\d+)?/);
+        if (!m) throw new Error("Número mal escrito cerca de «" + s.slice(i, i + 5) + "».");
+        t.push({ k: "num", v: parseFloat(m[0].replace(",", ".")), raw: m[0].replace(",", ".") });
+        i += m[0].length;
+      } else if (/[A-Za-z_]/.test(ch)) {
+        var w = s.slice(i).match(/^[A-Za-z_][A-Za-z_0-9]*/)[0];
+        t.push({ k: "id", v: w }); i += w.length;
+      } else if (s.substr(i, 2) === "**") { t.push({ k: "op", v: "^" }); i += 2; }
+      else if ("+-*/^()".indexOf(ch) >= 0) { t.push({ k: "op", v: ch }); i++; }
+      else throw new Error("El símbolo «" + ch + "» no se reconoce.");
+    }
+    return t;
+  }
+
+  function analizar(src, vars) {
+    var t = tokenizar(src), p = 0;
+    if (!t.length) throw new Error("Escriba una expresión.");
+    function ver(v) { return p < t.length && t[p].k === "op" && t[p].v === v; }
+    function expr() {
+      var n = term();
+      while (ver("+") || ver("-")) { var o = t[p++].v; n = { k: "bin", o: o, a: n, b: term() }; }
+      return n;
+    }
+    function term() {
+      var n = unario();
+      while (ver("*") || ver("/")) { var o = t[p++].v; n = { k: "bin", o: o, a: n, b: unario() }; }
+      if (p < t.length && (t[p].k === "id" || t[p].k === "num" || ver("(")))
+        throw new Error("Falta un operador: use * para multiplicar (por ejemplo, 2*a, no 2a).");
+      return n;
+    }
+    function unario() {
+      if (ver("-")) { p++; return { k: "neg", a: unario() }; }
+      if (ver("+")) { p++; return unario(); }
+      return potencia();
+    }
+    function potencia() {
+      var b = primario();
+      if (ver("^")) { p++; return { k: "bin", o: "^", a: b, b: unario() }; }
+      return b;
+    }
+    function primario() {
+      if (p >= t.length) throw new Error("La expresión está incompleta.");
+      var x = t[p];
+      if (x.k === "num") { p++; return { k: "num", v: x.v, raw: x.raw }; }
+      if (x.k === "id") {
+        p++;
+        if (FUNCS[x.v] && ver("(")) {
+          p++; var a = expr();
+          if (!ver(")")) throw new Error("Falta cerrar el paréntesis de " + x.v + "(…).");
+          p++; return { k: "fn", f: x.v, a: a };
+        }
+        if (FUNCS[x.v]) throw new Error("Después de " + x.v + " van paréntesis: " + x.v + "(…).");
+        if (vars.indexOf(x.v) < 0) throw new Error("No se reconoce «" + x.v + "». Puede usar: " + vars.join(", ") + ".");
+        return { k: "var", v: x.v };
+      }
+      if (ver("(")) {
+        p++; var e = expr();
+        if (!ver(")")) throw new Error("Hay un paréntesis sin cerrar.");
+        p++; return e;
+      }
+      throw new Error("Sobra o falta algo cerca de «" + x.v + "».");
+    }
+    var arbol = expr();
+    if (p < t.length) throw new Error(ver(")") ? "Hay un paréntesis de cierre de más." : "Sobra algo al final: «" + t[p].v + "».");
+    return arbol;
+  }
+
+  function evaluar(n, env) {
+    switch (n.k) {
+      case "num": return n.v;
+      case "var": return env[n.v];
+      case "neg": return -evaluar(n.a, env);
+      case "fn": return FUNCS[n.f](evaluar(n.a, env));
+      default:
+        var a = evaluar(n.a, env), b = evaluar(n.b, env);
+        if (n.o === "+") return a + b;
+        if (n.o === "-") return a - b;
+        if (n.o === "*") return a * b;
+        if (n.o === "/") return a / b;
+        return Math.pow(a, b);
+    }
+  }
+
+  var PREC = { "+": 1, "-": 1, "*": 2, "/": 3, "^": 4 };
+  function latex(n) {
+    switch (n.k) {
+      case "num": return n.raw.replace(".", "{,}");
+      case "var":
+        if (GRIEGAS[n.v]) return GRIEGAS[n.v];
+        var m = n.v.match(/^([A-Za-z])([A-Za-z0-9]+)$/);
+        return m ? m[1] + "_{" + m[2] + "}" : n.v;
+      case "neg": return "-" + envolver(n.a, 2);
+      case "fn":
+        if (n.f === "sqrt") return "\\sqrt{" + latex(n.a) + "}";
+        if (n.f === "exp") return "e^{" + latex(n.a) + "}";
+        return "\\ln\\left(" + latex(n.a) + "\\right)";
+      default:
+        if (n.o === "/") return "\\dfrac{" + latex(n.a) + "}{" + latex(n.b) + "}";
+        if (n.o === "^") return envolver(n.a, 5) + "^{" + latex(n.b) + "}";
+        if (n.o === "*") return envolver(n.a, 2) + " \\cdot " + envolver(n.b, 2);
+        return latex(n.a) + " " + n.o + " " + envolver(n.b, n.o === "-" ? 2 : 1);
+    }
+  }
+  function nivel(n) { return n.k === "bin" ? PREC[n.o] : n.k === "neg" ? 1.5 : 9; }
+  function envolver(n, min) { var s = latex(n); return nivel(n) < min ? "\\left(" + s + "\\right)" : s; }
+
+  return {
+    analizar: analizar,
+    evaluar: evaluar,
+    latex: function (src, vars) { return latex(analizar(src, vars)); }
+  };
+})();
+
+</script>
+<script>
+
+</script>
+<script>
+(function () {
+"use strict";
+
+/* ====================== CONFIGURACIÓN ====================== */
+const CONFIG = {
+  // Pegue aquí la misma URL de la aplicación web que usó en index.html:
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycby6DqY7cI3GvnkaQCgyCgFTtKcJcMYdYueHX0WofhDqEqVNYnpRxUzMGA07jh_k4JjIFw/exec",
+  // Taller que muestra esta página: "T1" o "T2"
+  TALLER: "T1",
+  DEMO: false
+};
+/* =========================================================== */
+
+const R = String.raw;
+const EJ = [
+  { id: "e1", titulo: "Impuesto en un mercado lineal", peso: 20,
+    enun: [R`En el mercado de un bien, la demanda y la oferta son`, R`$$Q^d = a - bP \qquad Q^s = c + dP$$`,
+      R`donde $P$ es el precio en miles de pesos y $Q$ la cantidad en miles de unidades. El gobierno establece un impuesto de $t$ por unidad, que pagan los productores: si el consumidor paga $P_c$, el productor recibe $P_p = P_c - t$.`],
+    params: [["a", "a"], ["b", "b"], ["c", "c"], ["d", "d"], ["t", "t"]],
+    num: [["e1_P", R`$P^*$, precio de equilibrio sin impuesto`], ["e1_Q", R`$Q^*$, cantidad de equilibrio sin impuesto`],
+      ["e1_Pc", R`$P_c$, precio que paga el consumidor`], ["e1_Pp", R`$P_p$, precio que recibe el productor`], ["e1_Qt", R`$Q_t$, cantidad con impuesto`],
+      ["e1_pcons", "Porcentaje del impuesto que pagan los consumidores (%)"], ["e1_rec", "Recaudo del gobierno"],
+      ["e1_pe", R`Pérdida de eficiencia (triángulo entre las curvas, de $Q_t$ a $Q^*$)`],
+      ["e1_tmax", R`Sensibilidad: impuesto $t$ que maximiza el recaudo`]],
+    formula: ["e1_f", R`$P_c$ en función de a, b, c, d y t`, ["a", "b", "c", "d", "t"]],
+    graficas: [R`**Mercado:** demanda y oferta antes y después del impuesto, con la cantidad en el eje horizontal y el precio en el vertical (despeje $P$ en cada curva). Marque $(Q^*, P^*)$, $P_c$, $P_p$ y $Q_t$, y sombree el recaudo (rectángulo) y la pérdida de eficiencia (triángulo).`,
+      R`**Recaudo y pérdida de eficiencia contra $t$**, desde 0 hasta el impuesto con el que la cantidad transada llega a cero, marcando el máximo del recaudo.`],
+    codigo: "Una función `resolver(a, b, c, d, t)` con los resultados, el cálculo de la sensibilidad y las dos gráficas.",
+    mc: [["e1_m1", "En un mercado lineal como este, ¿qué lado paga una mayor parte del impuesto?",
+      ["El que entrega legalmente el impuesto al gobierno.", "Siempre los consumidores, porque el precio que pagan sube.", "El que tiene la curva menos sensible al precio (menor b o d).", "El que tiene la curva más sensible al precio (mayor b o d)."]],
+      ["e1_m2", "Si el impuesto ya está por encima del que maximiza el recaudo y el gobierno lo reduce:",
+      ["El recaudo y la pérdida de eficiencia disminuyen.", "El recaudo aumenta y la pérdida de eficiencia disminuye.", "El recaudo disminuye y la pérdida de eficiencia aumenta.", "El recaudo no cambia, porque la cantidad se ajusta."]]] },
+  { id: "e2", titulo: "Modelo de Solow", peso: 20,
+    enun: [R`En una economía, la producción por trabajador es $y = k^{\alpha}$, donde $k$ es el capital por trabajador. Cada año se ahorra e invierte una fracción $s$ de la producción, la población crece a la tasa $n$ y el capital se deprecia a la tasa $\delta$. El capital por trabajador evoluciona según`,
+      R`$$k_{t+1} = k_t + s\,k_t^{\alpha} - (n + \delta)\,k_t$$`,
+      R`El estado estacionario es el valor $k^*$ en el que $k_{t+1} = k_t$. La regla de oro es el $k$ que maximiza el consumo de estado estacionario $c(k) = k^{\alpha} - (n+\delta)k$.`],
+    params: [["alfa", R`\alpha`], ["s", "s"], ["n", "n"], ["delta", R`\delta`]],
+    num: [["e2_k", R`$k^*$, capital de estado estacionario`], ["e2_y", R`$y^*$, producción de estado estacionario`], ["e2_c", R`$c^* = (1-s)\,y^*$`],
+      ["e2_koro", "Capital de la regla de oro"], ["e2_soro", "Tasa de ahorro de la regla de oro (en decimal, por ejemplo 0,25)"],
+      ["e2_k1", R`$k_1$, si $k_0 = k^*/2$`], ["e2_k2", R`$k_2$`], ["e2_anios", R`Años para alcanzar el 90 % de $k^*$ desde $k_0 = k^*/2$`],
+      ["e2_cs", R`Sensibilidad: $c^*$ si la tasa de ahorro aumenta en 0,05`]],
+    formula: ["e2_f", R`$k^*$ en función de alfa, s, n y delta`, ["alfa", "s", "n", "delta"]],
+    graficas: [R`**Diagrama de Solow:** la inversión $s\,k^{\alpha}$ y la depreciación efectiva $(n+\delta)k$ contra $k$, marcando $k^*$ donde se cruzan.`,
+      R`**Trayectoria:** $k_t$ año por año desde $k_0$, con líneas horizontales en $k^*$ y en $0{,}9\,k^*$.`],
+    codigo: "Una función `resolver(alfa, s, n, delta)` con los resultados, el cálculo de la sensibilidad y las dos gráficas.",
+    mc: [["e2_m1", "Si una economía ahorra menos que la tasa de la regla de oro (s < α) y aumenta su ahorro de forma permanente:",
+      ["Su consumo de largo plazo disminuye, porque consume una fracción menor de la producción.", "Su producción por trabajador crece a una tasa más alta para siempre.", "Su k* no cambia, porque la depreciación compensa el mayor ahorro.", "Su consumo de largo plazo aumenta, aunque durante la transición consume menos."]],
+      ["e2_m2", "En la trayectoria, el capital por trabajador crece más rápido:",
+      ["Al comienzo, porque con poco capital su productividad marginal es alta y la inversión supera ampliamente a la depreciación.", "Cerca de k*, porque la economía ya acumuló más capital.", "A un ritmo constante, porque s, n y δ no cambian.", "Al comienzo, porque con poco capital la depreciación es negativa."]]] },
+  { id: "e3", titulo: "Maximización del beneficio", peso: 20,
+    enun: [R`Una empresa es la única productora de un bien (monopolio). La demanda inversa y el costo total son`,
+      R`$$P(Q) = A - BQ \qquad C(Q) = F + cQ + eQ^2$$`],
+    params: [["A", "A"], ["B", "B"], ["F", "F"], ["c", "c"], ["e", "e"]],
+    num: [["e3_Q", R`$Q^*$, cantidad que maximiza el beneficio`], ["e3_P", R`$P^*$, precio óptimo`], ["e3_pi", R`$\pi^*$, beneficio máximo`],
+      ["e3_eps", R`Elasticidad $\varepsilon = \frac{dQ}{dP}\cdot\frac{P^*}{Q^*}$ en el óptimo (con su signo)`],
+      ["e3_Pn", R`Sensibilidad: nuevo $P^*$ si $c$ aumenta en 5`]],
+    formula: ["e3_f", R`$Q^*$ en función de A, B, c y e`, ["A", "B", "c", "e"]],
+    graficas: [R`**Monopolio:** demanda, ingreso marginal y costo marginal contra $Q$, marcando el cruce $IMg = CMg$, la cantidad $Q^*$ y el precio $P^*$ sobre la demanda.`,
+      R`**Beneficio:** $\pi(Q)$, marcando el máximo $(Q^*, \pi^*)$.`],
+    codigo: "Una función `resolver(A, B, F, c, e)` con los resultados, el cálculo de la sensibilidad y las dos gráficas.",
+    mc: [["e3_m1", "En el óptimo, la demanda es elástica (|ε| > 1). Esto ocurre porque:",
+      ["El monopolio siempre fija el precio más alto que los consumidores están dispuestos a pagar.", "En el tramo inelástico el ingreso marginal es negativo, así que producir menos aumentaría el ingreso y reduciría el costo.", "En el tramo elástico el costo marginal es menor.", "La elasticidad es la misma en todos los puntos de una demanda lineal."]],
+      ["e3_m2", "Cuando c aumenta, el precio sube menos que el aumento del costo porque:",
+      ["El costo fijo absorbe parte del aumento.", "La demanda es inelástica en el óptimo.", "Subir el precio en todo el aumento reduciría demasiado las ventas; la empresa reparte el ajuste entre precio y cantidad.", "El monopolio no puede cambiar el precio una vez fijado."]]] },
+  { id: "e4", titulo: "Datos simulados: crecimiento del PIB", peso: 40,
+    enun: [R`Su pareja tiene su propia base de datos: el PIB real (en miles de millones de pesos de 2015) y la población (en millones) de un país ficticio entre 2004 y 2024, es decir, 21 años y 20 tasas de crecimiento. La tasa de crecimiento anual es $g_t = \dfrac{Y_t - Y_{t-1}}{Y_{t-1}}$.`],
+    datos: true,
+    num: [["e4_amax", "Año con la mayor tasa de crecimiento"], ["e4_amin", "Año con la menor tasa de crecimiento"],
+      ["e4_gm", R`$\bar g$, promedio aritmético de las tasas (%)`], ["e4_sd", "Desviación estándar muestral de las tasas (puntos porcentuales)"],
+      ["e4_gc", R`$g_c = (Y_{2024}/Y_{2004})^{1/20} - 1$, tasa compuesta (%)`], ["e4_gl", R`$(\ln Y_{2024} - \ln Y_{2004})/20$, tasa logarítmica (%)`],
+      ["e4_gpc", "Tasa compuesta del PIB per cápita (%)"], ["e4_dup", R`Años para duplicar el PIB a la tasa $g_c$`],
+      ["e4_y24", "Sensibilidad: PIB de 2024 sin la recesión (reemplace la tasa del año de recesión por el promedio de las otras 19)"]],
+    formula: ["e4_f", "Años para duplicar el PIB en función de la tasa g (en decimal)", ["g"]],
+    graficas: [R`**Niveles:** el PIB observado junto con la trayectoria que parte de $Y_{2004}$ y crece cada año a la tasa constante $g_c$, que debe terminar exactamente en $Y_{2024}$.`,
+      R`**Tasas:** las tasas anuales en barras, con líneas horizontales en $\bar g$ y en $g_c$, y el año de recesión en otro color.`],
+    codigo: "Un notebook que lea el CSV (columnas `anio`, `pib` y `poblacion`), calcule los resultados y presente las dos gráficas.",
+    mc: [["e4_m1", "El promedio aritmético ḡ es mayor que la tasa compuesta g_c porque:",
+      ["Las tasas se acumulan multiplicativamente y, cuando varían de un año a otro, su promedio aritmético supera la tasa que reproduce el crecimiento total.", "La tasa compuesta no incluye el año de la recesión.", "El promedio usa 20 tasas y la tasa compuesta usa 21 años.", "El crecimiento de la población reduce la tasa compuesta."]],
+      ["e4_m2", "Para describir el crecimiento del PIB en el período, la medida más adecuada es:",
+      ["ḡ, porque usa la información de todos los años.", "La tasa de 2024, porque es la más reciente.", "La mediana de las tasas, porque la recesión no la afecta.", "g_c, porque aplicada desde 2004 reproduce exactamente el PIB de 2024."]]] }
+];
+const TODOS = EJ.reduce((a, e) => a.concat(e.num.map(x => x[0]), [e.formula[0]], e.mc.map(x => x[0])), []);
+
+const LISTO = CONFIG.DEMO || /^https:\/\/script\.google\.com\/.+\/exec$/.test(String(CONFIG.SCRIPT_URL || "").trim());
+const $app = document.getElementById("app");
+const $bar = document.getElementById("bar"), $barin = document.getElementById("barin");
+if (CONFIG.DEMO) document.getElementById("demo").hidden = false;
+
+/* ---------- utilidades ---------- */
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function tex(t, display) {
+  if (window.katex) { try { return window.katex.renderToString(t, { output: "mathml", throwOnError: false, displayMode: !!display }); } catch (e) { /* sigue */ } }
+  return '<span class="texraw">' + esc(t) + "</span>";
+}
+function fmt(s) {
+  return String(s).split(/(\$\$[^$]+\$\$|\$[^$]+\$|`[^`]+`|\*\*[^*]+\*\*)/g).map(p => {
+    if (p.startsWith("$$")) return '<div class="eq">' + tex(p.slice(2, -2), true) + "</div>";
+    if (p.length > 2 && p[0] === "$") return tex(p.slice(1, -1));
+    if (p.length > 2 && p[0] === "`") return "<code>" + esc(p.slice(1, -1)) + "</code>";
+    if (p.startsWith("**")) return "<b>" + fmt(p.slice(2, -2)) + "</b>";
+    return esc(p);
+  }).join("");
+}
+function hashStr(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
+function barajar(n, semilla) {
+  const idx = Array.from({ length: n }, (_, i) => i); let a = semilla >>> 0;
+  const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  return idx;
+}
+const numES = v => String(v).replace(".", ",");
+const texNum = v => String(v).replace(".", "{,}");
+function sget(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+function sset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* nada */ } }
+function fechaLarga(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleString("es-CO", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" });
+}
+
+/* ---------- estado ---------- */
+let S = { fase: "login", doc: sget("taller:" + CONFIG.TALLER + ":doc") || "", info: null, resp: {}, nb: null, nbMsg: null, enviando: false, msg: null, demoCal: null };
+const claveBorrador = () => "taller:" + CONFIG.TALLER + ":" + (S.info ? S.info.pareja : "") + ":borrador";
+
+/* ---------- red ---------- */
+async function llamar(cuerpo) {
+  if (CONFIG.DEMO) return demo(cuerpo);
+  const res = await fetch(CONFIG.SCRIPT_URL.trim(), { method: "POST", body: JSON.stringify(cuerpo) });
+  if (!res.ok) throw new Error("http " + res.status);
+  return res.json();
+}
+let demoEntrega = null;
+function demo(c) {
+  const pareja = "P-DEMO";
+  if (c.accion === "taller_inicio") return { ok: true, taller: "Taller 1", pareja, integrantes: ["Estudiante de ejemplo", "Compañero de ejemplo"], abierto: true, limite: "2026-11-28T23:59:00-05:00", params: Motor.params("T1", pareja), entrega: demoEntrega };
+  const cal = Motor.calificar("T1", pareja, c.respuestas);
+  demoEntrega = { fecha: new Date().toISOString(), envios: (demoEntrega ? demoEntrega.envios : 0) + 1, notebook: !!c.notebook || !!(demoEntrega && demoEntrega.notebook), por: "Estudiante de ejemplo", respuestas: c.respuestas };
+  return { ok: true, recibido: demoEntrega.fecha, demoCal: cal, notebook: !!c.notebook };
+}
+
+/* ---------- vistas ---------- */
+function vistaLogin() {
+  return `<section class="panel login">
+    <h2>Ingreso</h2>
+    <p class="muted">Escriba su número de documento de identidad. La página le mostrará su pareja y los ejercicios con los valores que les corresponden.</p>
+    ${LISTO ? "" : `<p class="notice warn">El taller todavía no está habilitado. Espere la indicación del profesor.</p>`}
+    <form id="f-login" novalidate style="display:grid;gap:10px">
+      <label for="doc" style="font-weight:600;font-size:14px">Número de documento</label>
+      <input type="text" id="doc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" value="${esc(S.doc)}">
+      ${S.msg ? `<p class="notice ${S.msg.t}" role="alert">${esc(S.msg.m)}</p>` : ""}
+      <button type="submit" class="btn primary" ${LISTO && !S.enviando ? "" : "disabled"}>${S.enviando ? "Buscando…" : "Entrar"}</button>
+    </form>
+  </section>`;
+}
+
+function vistaParams(e, p) {
+  const vals = e.params.map(([k, t]) => "<span>" + tex(t + " = " + texNum(p[k])) + "</span>").join("");
+  const py = e.params.map(x => x[0]).join(", ") + " = " + e.params.map(x => String(p[x[0]])).join(", ");
+  return `<div class="params"><span class="sub" style="margin:0">Valores de su pareja</span><div class="vals">${vals}</div>
+    <div class="py"><code id="py-${e.id}">${esc(py)}</code><button type="button" class="btn sm" data-a="copiar" data-t="py-${e.id}">Copiar para Python</button></div></div>`;
+}
+
+function vistaDatos(filas) {
+  const trs = filas.map(f => `<tr><td>${f.anio}</td><td>${numES(f.pib.toFixed(2))}</td><td>${numES(f.poblacion.toFixed(2))}</td></tr>`).join("");
+  return `<div class="params"><span class="sub" style="margin:0">Datos de su pareja</span>
+    <div class="row"><button type="button" class="btn sm primary" data-a="csv">Descargar CSV</button>
+    <span class="small muted">En Colab: suba el archivo y use <code>pd.read_csv("${archivoCSV()}")</code></span></div>
+    <div class="tablewrap"><table class="datos"><thead><tr><th>anio</th><th>pib</th><th>poblacion</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
+}
+const archivoCSV = () => "taller1_datos_" + (S.info ? S.info.pareja : "") + ".csv";
+
+function vistaEj(e, k) {
+  const p = S.info.params;
+  const dis = S.info.abierto ? "" : " disabled";
+  const nums = e.num.map(([id, lab]) => `<div class="field" id="w-${id}"><label for="${id}">${fmt(lab)}</label>
+    <input type="text" id="${id}" inputmode="decimal" autocomplete="off" value="${esc(S.resp[id] || "")}"${dis}></div>`).join("");
+  const [fid, flab, fvars] = e.formula;
+  const mcs = e.mc.map(([id, preg, ops]) => {
+    const orden = barajar(ops.length, hashStr(S.info.pareja + "|" + id));
+    return `<fieldset class="mc"><legend>${esc(preg)}</legend>${orden.map(i => `<label class="opt"><input type="radio" name="${id}" value="${i}"${String(S.resp[id]) === String(i) ? " checked" : ""}${dis}><span>${esc(ops[i])}</span></label>`).join("")}</fieldset>`;
+  }).join("");
+  return `<section class="ej" id="sec-${e.id}">
+    <div class="ejhead"><span class="chip">Ejercicio ${k + 1} · ${e.peso} %</span><h2>${esc(e.titulo)}</h2></div>
+    <div class="panel">
+      <div class="enun">${e.enun.map(x => x.startsWith("$$") ? fmt(x) : "<p>" + fmt(x) + "</p>").join("")}</div>
+      ${e.datos ? vistaDatos(p.datos) : vistaParams(e, p[e.id])}
+    </div>
+    <div class="panel">
+      <h3>Resultados</h3>
+      <p class="small muted">Con dos decimales. Puede usar coma o punto decimal.</p>
+      <div class="fields">${nums}</div>
+      <h3 style="margin-top:6px">Fórmula en letras</h3>
+      <div class="formula">
+        <label for="${fid}" class="small">${fmt(flab)}. Escríbala en notación de Python, por ejemplo <code>(a - c)/(b + d)</code> o <code>x**2</code>.</label>
+        <input type="text" id="${fid}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(S.resp[fid] || "")}" data-vars="${fvars.join(",")}"${dis}>
+        <div class="preview vacio" id="pv-${fid}" aria-live="polite">La vista previa aparece aquí.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>En su notebook</h3>
+      <ul class="tareas"><li>${fmt(e.codigo)}</li>${e.graficas.map(g => "<li>" + fmt(g) + "</li>").join("")}</ul>
+    </div>
+    <div class="panel">
+      <h3>Interpretación</h3>
+      ${mcs}
+    </div>
+  </section>`;
+}
+
+function contar(e) {
+  const ids = e.num.map(x => x[0]).concat([e.formula[0]], e.mc.map(x => x[0]));
+  return [ids.filter(id => String(S.resp[id] || "").trim() !== "").length, ids.length];
+}
+
+function vistaEntrega() {
+  const inf = S.info, ent = inf.entrega;
+  const faltan = EJ.map(e => contar(e)).reduce((a, [x, n]) => a + (n - x), 0);
+  let estado = "";
+  if (!inf.abierto) estado = `<p class="notice warn">El taller está cerrado. ${ent ? "Esta es la entrega que quedó registrada." : "Su pareja no registró ninguna entrega."}</p>`;
+  else if (ent) estado = `<p class="notice ok">Entrega recibida el ${esc(fechaLarga(ent.fecha))}${ent.por ? ", enviada por " + esc(ent.por) : ""} (envío n.º ${ent.envios}). Pueden corregirla y volver a enviarla hasta la fecha límite; cuenta el último envío.</p>`;
+  const demoCal = S.demoCal ? `<div class="notice warn demo-cal"><b>Calificación automática (solo en la vista previa):</b>
+    ${EJ.map((e, i) => `<span>Ejercicio ${i + 1}: resultados ${numES(S.demoCal.porEjercicio[e.id].resultados)}/40 · fórmula e interpretación ${S.demoCal.porEjercicio[e.id].formulaInterp}/30</span>`).join("")}
+    <span>Automático ponderado: <b>${numES(S.demoCal.autoPonderado)}/70</b> (el código suma los 30 restantes)</span></div>` : "";
+  return `<section class="ej" id="sec-entrega">
+    <div class="ejhead"><span class="chip">Entrega</span><h2>Notebook y envío</h2></div>
+    <div class="panel">
+      <div class="resumen">${EJ.map((e, i) => { const [x, n] = contar(e); return `<div><span class="muted">Ejercicio ${i + 1}</span><b>${x}/${n}</b></div>`; }).join("")}</div>
+      <div class="field">
+        <label for="nb">Notebook de Colab (.ipynb)</label>
+        <input type="file" id="nb" accept=".ipynb,application/json"${inf.abierto ? "" : " disabled"}>
+        <p class="small muted">En Colab: primero Entorno de ejecución → Reiniciar y ejecutar todo, para que el notebook corra completo y guarde las gráficas. Después Archivo → Descargar → Descargar .ipynb, y suba aquí ese archivo. Máximo 8 MB.</p>
+        ${S.nbMsg ? `<p class="small" style="color:var(--${S.nbMsg.t})">${esc(S.nbMsg.m)}</p>` : ""}
+        ${ent && ent.notebook && !S.nb ? `<p class="small" style="color:var(--ok)">Ya hay un notebook recibido. Solo suba otro si quiere reemplazarlo.</p>` : ""}
+      </div>
+      ${estado}${demoCal}
+      ${S.msg ? `<p class="notice ${S.msg.t}" role="alert">${esc(S.msg.m)}</p>` : ""}
+      ${inf.abierto ? `<div class="row"><button type="button" class="btn primary" data-a="enviar"${S.enviando ? " disabled" : ""}>${S.enviando ? "Enviando…" : ent ? "Enviar de nuevo" : "Enviar entrega"}</button>
+        <span class="small muted">${faltan ? `Faltan ${faltan} respuestas; puede enviar así y completar después.` : "Todas las respuestas están completas."}</span></div>` : ""}
+      <p class="small muted">La página confirma la entrega pero no muestra si los resultados son correctos. Los recibirán con la retroalimentación, después del cierre.</p>
+    </div>
+  </section>`;
+}
+
+function vistaTaller() {
+  const inf = S.info;
+  document.getElementById("titulo").textContent = inf.taller;
+  return `<div class="panel">
+      <p><b>Pareja:</b> ${inf.integrantes.map(esc).join(" y ")}</p>
+      <p><b>Fecha límite:</b> ${esc(fechaLarga(inf.limite))}</p>
+      <p class="small muted">Pueden enviar cualquiera de los dos, las veces que quieran; cuenta el último envío. Coordinen quién envía para no reemplazar el trabajo del otro. Sus respuestas también se guardan en este dispositivo mientras trabajan.</p>
+      <p class="small muted">Resuelvan primero cada ejercicio en letras y después reemplacen los valores. Las gráficas van en el notebook, con matplotlib, título, ejes con unidades, leyenda y los puntos importantes marcados.</p>
+    </div>
+    ${EJ.map(vistaEj).join("")}
+    ${vistaEntrega()}`;
+}
+
+function barra() {
+  if (S.fase !== "taller") { $bar.hidden = true; return; }
+  $bar.hidden = false;
+  $barin.innerHTML = EJ.map((e, i) => { const [x, n] = contar(e); return `<a href="#sec-${e.id}" class="${x === n ? "full" : ""}">E${i + 1} <span class="c">${x}/${n}</span></a>`; }).join("") + `<a href="#sec-entrega">Entrega</a>`;
+}
+
+function render() {
+  $app.innerHTML = S.fase === "taller" ? vistaTaller() : vistaLogin();
+  barra();
+  if (S.fase === "taller") EJ.forEach(e => previa(e.formula[0]));
+}
+
+function previa(id) {
+  const inp = document.getElementById(id), pv = document.getElementById("pv-" + id);
+  if (!inp || !pv) return;
+  const v = inp.value.trim();
+  if (!v) { pv.className = "preview vacio"; pv.textContent = "La vista previa aparece aquí."; return; }
+  try { pv.innerHTML = tex(Formula.latex(v, inp.dataset.vars.split(",")), true); pv.className = "preview"; }
+  catch (err) { pv.className = "preview err"; pv.textContent = err.message; }
+}
+
+/* ---------- acciones ---------- */
+async function entrar(doc) {
+  doc = doc.toUpperCase().replace(/[\s.\-]/g, "");
+  if (!/^[0-9A-Z]{5,15}$/.test(doc)) { S.msg = { t: "bad", m: "Revise el número de documento: solo números (y letras si es pasaporte), entre 5 y 15 caracteres." }; render(); return; }
+  S.doc = doc; S.enviando = true; S.msg = null; render();
+  try {
+    const r = await llamar({ accion: "taller_inicio", taller: CONFIG.TALLER, doc });
+    S.enviando = false;
+    if (!r.ok) {
+      S.msg = { t: "bad", m: r.error === "sin-pareja" ? "Ese documento no aparece en la lista de parejas. Revíselo o escríbale al profesor." : "No se pudo abrir el taller. Intente de nuevo en unos minutos." };
+      render(); return;
+    }
+    sset("taller:" + CONFIG.TALLER + ":doc", doc);
+    S.info = r; S.fase = "taller";
+    S.resp = Object.assign({}, r.entrega ? r.entrega.respuestas : {});
+    S.nb = null; S.nbMsg = null;
+    const b = sget(claveBorrador());
+    if (r.abierto && b && (!r.entrega || new Date(b.t) > new Date(r.entrega.fecha))) { Object.assign(S.resp, b.resp); }
+    render();
+    window.scrollTo(0, 0);
+  } catch (e) {
+    S.enviando = false; S.msg = { t: "bad", m: "No hay conexión con el servidor. Revise su internet e intente de nuevo." }; render();
+  }
+}
+
+async function enviar() {
+  S.enviando = true; S.msg = null; render(); irEntrega();
+  try {
+    const resp = {}; TODOS.forEach(id => { if (S.resp[id] !== undefined && String(S.resp[id]).trim() !== "") resp[id] = String(S.resp[id]).trim(); });
+    const cuerpo = { accion: "taller_envio", taller: CONFIG.TALLER, doc: S.doc, respuestas: resp };
+    if (S.nb) cuerpo.notebook = S.nb.texto;
+    const r = await llamar(cuerpo);
+    S.enviando = false;
+    if (r.ok) {
+      S.info.entrega = { fecha: r.recibido, envios: (S.info.entrega ? S.info.entrega.envios : 0) + 1, notebook: !!S.nb || !!(S.info.entrega && S.info.entrega.notebook), por: "", respuestas: resp };
+      S.nb = null; S.nbMsg = null;
+      S.demoCal = r.demoCal || null;
+      S.msg = { t: "ok", m: "Entrega enviada correctamente." };
+      sset(claveBorrador(), null);
+    } else {
+      S.msg = { t: "bad", m: r.error === "cerrado" ? "El taller ya está cerrado y no recibe entregas." : r.error === "notebook-grande" ? "El notebook pesa más de 8 MB. Reduzca el tamaño de las gráficas o borre salidas largas e intente de nuevo." : r.error === "notebook-invalido" ? "El archivo no es un notebook válido. Descárguelo de nuevo desde Colab con Archivo → Descargar → Descargar .ipynb." : "El servidor rechazó la entrega. Intente de nuevo." };
+      if (r.error === "cerrado") S.info.abierto = false;
+    }
+  } catch (e) {
+    S.enviando = false; S.msg = { t: "bad", m: "No se pudo enviar por un problema de conexión. Sus respuestas siguen guardadas en este dispositivo; intente de nuevo." };
+  }
+  render(); irEntrega();
+}
+function leerNotebook(f) {
+  S.nb = null;
+  if (!f) { S.nbMsg = null; render(); irEntrega(); return; }
+  if (!/\.ipynb$/i.test(f.name)) { S.nbMsg = { t: "bad", m: "El archivo debe terminar en .ipynb (Archivo → Descargar → Descargar .ipynb en Colab)." }; render(); irEntrega(); return; }
+  if (f.size > 8000000) { S.nbMsg = { t: "bad", m: "El notebook pesa más de 8 MB. Reduzca el tamaño de las gráficas o borre salidas largas." }; render(); irEntrega(); return; }
+  const lector = new FileReader();
+  lector.onload = () => {
+    let celdas = 0, graficas = 0;
+    try {
+      const j = JSON.parse(lector.result);
+      if (!Array.isArray(j.cells)) throw new Error("x");
+      celdas = j.cells.filter(c => c.cell_type === "code").length;
+      j.cells.forEach(c => (c.outputs || []).forEach(o => { if (o.data && o.data["image/png"]) graficas++; }));
+      S.nb = { nombre: f.name, texto: lector.result };
+      S.nbMsg = graficas ? { t: "ok", m: `Listo para enviar: ${f.name} (${celdas} celdas de código, ${graficas} gráficas guardadas).` }
+        : { t: "warn", m: `${f.name} no tiene gráficas guardadas. Ejecute todo en Colab (Reiniciar y ejecutar todo) antes de descargarlo, o envíelo así si aún no las tiene.` };
+    } catch (err) { S.nbMsg = { t: "bad", m: "El archivo no es un notebook válido. Descárguelo de nuevo desde Colab." }; }
+    render(); irEntrega();
+  };
+  lector.onerror = () => { S.nbMsg = { t: "bad", m: "No se pudo leer el archivo. Intente de nuevo." }; render(); irEntrega(); };
+  lector.readAsText(f);
+}
+function irEntrega() { const s = document.getElementById("sec-entrega"); if (s) s.scrollIntoView({ block: "start" }); }
+
+function descargarCSV() {
+  const f = S.info.params.datos;
+  const txt = "anio,pib,poblacion\n" + f.map(x => `${x.anio},${x.pib.toFixed(2)},${x.poblacion.toFixed(2)}`).join("\n") + "\n";
+  const url = URL.createObjectURL(new Blob([txt], { type: "text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = archivoCSV();
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ---------- eventos ---------- */
+let tGuardar = null;
+function guardarBorrador() { clearTimeout(tGuardar); tGuardar = setTimeout(() => sset(claveBorrador(), { t: new Date().toISOString(), resp: S.resp }), 400); }
+$app.addEventListener("submit", e => { if (e.target.id === "f-login") { e.preventDefault(); entrar(document.getElementById("doc").value); } });
+$app.addEventListener("input", e => {
+  const el = e.target;
+  if (S.fase !== "taller") return;
+  if (el.type === "file") return;
+  if (el.type === "radio") S.resp[el.name] = el.value;
+  else if (TODOS.indexOf(el.id) >= 0) S.resp[el.id] = el.value;
+  else return;
+  if (el.dataset && el.dataset.vars) previa(el.id);
+  guardarBorrador(); barra();
+});
+$app.addEventListener("change", e => {
+  if (e.target.id === "nb") { leerNotebook(e.target.files && e.target.files[0]); return; }
+  if (e.target.type === "radio") { S.resp[e.target.name] = e.target.value; guardarBorrador(); barra(); } });
+$app.addEventListener("click", e => {
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  if (b.dataset.a === "enviar") enviar();
+  else if (b.dataset.a === "csv") descargarCSV();
+  else if (b.dataset.a === "copiar") {
+    const t = document.getElementById(b.dataset.t).textContent;
+    const ok = () => { b.textContent = "Copiado"; setTimeout(() => { b.textContent = "Copiar para Python"; }, 1500); };
+    try { navigator.clipboard.writeText(t).then(ok, () => seleccionar(b.dataset.t)); } catch (err) { seleccionar(b.dataset.t); }
+  }
+});
+function seleccionar(id) { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+render();
+if (CONFIG.DEMO) entrar("1000000001");
+})();
+</script>
+</body>
+</html>
