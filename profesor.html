@@ -667,14 +667,21 @@ function vistaPanel() {
 
 
 /* ====================== TALLERES ====================== */
-const TALLERES_PROF = [{ id: "T1", nombre: "Taller 1" }];
-const ETQ = {
+const TALLERES_PROF = [{ id: "T1", nombre: "Taller 1" }, { id: "T2", nombre: "Taller 2" }];
+const ETQ1 = {
   e1_P: "P*", e1_Q: "Q*", e1_Pc: "P_c", e1_Pp: "P_p", e1_Qt: "Q_t", e1_pcons: "% que pagan los consumidores", e1_rec: "Recaudo", e1_pe: "Pérdida de eficiencia", e1_tmax: "Impuesto que maximiza el recaudo", e1_f: "Fórmula de P_c", e1_m1: "Interpretación: incidencia", e1_m2: "Interpretación: recaudo y eficiencia",
   e2_k: "k*", e2_y: "y*", e2_c: "c*", e2_koro: "k de la regla de oro", e2_soro: "s de la regla de oro", e2_k1: "k₁", e2_k2: "k₂", e2_anios: "Años hasta el 90 % de k*", e2_cs: "c* con s + 0,05", e2_f: "Fórmula de k*", e2_m1: "Interpretación: más ahorro", e2_m2: "Interpretación: convergencia",
   e3_Q: "Q*", e3_P: "P*", e3_pi: "π*", e3_eps: "Elasticidad", e3_Pn: "P* con c + 5", e3_f: "Fórmula de Q*", e3_m1: "Interpretación: tramo elástico", e3_m2: "Interpretación: traslado al precio",
   e4_amax: "Año de mayor crecimiento", e4_amin: "Año de menor crecimiento", e4_gm: "ḡ (promedio aritmético)", e4_sd: "Desviación estándar", e4_gc: "g_c (tasa compuesta)", e4_gl: "Tasa logarítmica", e4_gpc: "Tasa per cápita", e4_dup: "Años para duplicar", e4_y24: "PIB 2024 sin recesión", e4_f: "Fórmula de duplicación", e4_m1: "Interpretación: ḡ > g_c", e4_m2: "Interpretación: mejor medida"
 };
-const NOMBRE_EJ = ["Impuesto", "Solow", "Monopolio", "Datos del PIB"];
+const ETQ2 = {
+  e1_ec: "EC sin impuesto", e1_ep: "EP sin impuesto", e1_ect: "EC con impuesto", e1_ept: "EP con impuesto", e1_pe: "Pérdida de eficiencia", e1_pe2: "Pérdida con t/2", e1_f: "Fórmula del EC", e1_m1: "Interpretación: triángulo", e1_m2: "Interpretación: t al cuadrado",
+  e2_cq0: "Costo total en q₀", e2_dc: "Aumento de costo de 10 a 20", e2_q: "Cantidad óptima", e2_pi: "Beneficio máximo", e2_vpd: "VP discreto", e2_vpc: "VP continuo", e2_perp: "VP perpetuo", e2_vpr: "VP con r + 0,01", e2_f: "Fórmula del VP continuo", e2_m1: "Interpretación: continuo > discreto", e2_m2: "Interpretación: límite A/r",
+  e3_det: "det(A)", e3_p1: "P₁", e3_p2: "P₂", e3_p3: "P₃", e3_d1: "ΔP₁", e3_d2: "ΔP₂", e3_d3: "ΔP₃", e3_f: "Fórmula de Cramer", e3_m1: "Interpretación: sustitutos", e3_m2: "Interpretación: det = 0",
+  e4_det: "det(XᵀX)", e4_b0: "β̂₀", e4_b1: "β̂₁", e4_yhat: "Consumo estimado en Y = 5", e4_r2: "R²", e4_el: "Elasticidad", e4_b1s: "β̂₁ sin el mayor ingreso", e4_f: "Fórmula de β̂₁", e4_m1: "Interpretación: PMC", e4_m2: "Interpretación: det = 0"
+};
+const ETQ_T = { T1: ETQ1, T2: ETQ2 };
+const NOMBRES_EJ = { T1: ["Impuesto", "Solow", "Monopolio", "Datos del PIB"], T2: ["Excedentes", "Marginal y valor presente", "Mercados relacionados", "Regresión"] };
 let tab = "diag";
 let taller = { datos: null, cargando: false, error: "", hora: "", sortK: "auto", sortDir: -1 };
 
@@ -702,11 +709,19 @@ function simularTaller() {
   return { ok: true, taller: "Taller 1", abierto: true, limite: "2026-11-28T23:59:00-05:00", ejercicios: ejs.map(([id, peso]) => ({ id, peso: peso / 100, items: items[id] })), parejas };
 }
 
+function simularTaller2() {
+  const base = simularTaller(), mapa = {};
+  const t2 = { e1: Object.keys(ETQ2).filter(k => k.startsWith("e1_")), e2: Object.keys(ETQ2).filter(k => k.startsWith("e2_")), e3: Object.keys(ETQ2).filter(k => k.startsWith("e3_")), e4: Object.keys(ETQ2).filter(k => k.startsWith("e4_")) };
+  base.taller = "Taller 2"; base.limite = "2026-12-11T23:59:00-05:00"; base.apertura = "2026-12-04T00:00:00-05:00";
+  base.ejercicios.forEach(e => { e.items = t2[e.id]; });
+  base.parejas.forEach((p, i) => { if (!p.entregado) return; const det = {}; Object.keys(ETQ2).forEach((k, j) => { det[k] = (i + j) % 4 ? 1 : 0; }); p.detalle = det; });
+  return base;
+}
 async function cargarTaller(id) {
   taller.cargando = true; taller.error = ""; render();
   try {
     let d;
-    if (CONFIG.DEMO) { await new Promise(r => setTimeout(r, 200)); d = simularTaller(); }
+    if (CONFIG.DEMO) { await new Promise(r => setTimeout(r, 200)); d = id === "T2" ? simularTaller2() : simularTaller(); }
     else {
       const res = await fetch(CONFIG.SCRIPT_URL.trim(), { method: "POST", body: JSON.stringify({ accion: "taller_estadisticas", taller: id, clave: sget("diag-prof") || "" }) });
       if (!res.ok) throw new Error("http " + res.status);
@@ -729,7 +744,7 @@ function vistaTabs() {
 function vistaTaller() {
   const d = taller.datos;
   const barra = `<div class="status"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      ${d ? (d.abierto ? `<span class="pill on"><span class="dot"></span>Abierto</span>` : `<span class="pill"><span class="dot"></span>Cerrado</span>`) : ""}
+      ${d ? (d.abierto ? `<span class="pill on"><span class="dot"></span>Abierto</span>` : d.apertura && new Date() < new Date(d.apertura) ? `<span class="pill"><span class="dot"></span>Abre el ${esc(new Date(d.apertura).toLocaleDateString("es-CO", { day: "numeric", month: "long", timeZone: "America/Bogota" }))}</span>` : `<span class="pill"><span class="dot"></span>Cerrado</span>`) : ""}
       <span class="small muted">${d ? "Fecha límite: " + esc(new Date(d.limite).toLocaleString("es-CO", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Bogota" })) : ""}${taller.hora ? " · Actualizado a las " + taller.hora : ""}</span></div>
     <div class="tools">${taller.error ? `<span class="err small">${esc(taller.error)}</span>` : ""}
     <button type="button" class="btn primary" data-a="actualizar-taller"${taller.cargando ? " disabled" : ""}>${taller.cargando ? "Actualizando…" : "Actualizar"}</button></div></div>`;
@@ -749,14 +764,14 @@ function vistaTaller() {
   if (!ent.length) return barra + `<section class="blk"><header><h2>Resumen</h2></header>${resumen}</section>` + pendientes;
   const porEj = d.ejercicios.map((e, k) => {
     const r = media(ent.map(p => p.por[k].res)) / 40, f = media(ent.map(p => p.por[k].fi)) / 30;
-    return `<span class="lab"><b>E${k + 1}</b> · ${esc(NOMBRE_EJ[k] || e.id)} <span class="muted small">(${Math.round(100 * e.peso)} %)</span></span>
+    return `<span class="lab"><b>E${k + 1}</b> · ${esc((NOMBRES_EJ[tab] || [])[k] || e.id)} <span class="muted small">(${Math.round(100 * e.peso)} %)</span></span>
       <span class="track" data-tip="E${k + 1}: resultados ${nf1.format(40 * r)} de 40 en promedio"><i style="width:${(100 * r).toFixed(1)}%;background:var(--u${k + 1})"></i></span><span class="v">${pct(r)}</span>
       <span class="lab muted small" style="padding-left:1.1em">fórmula e interpretación</span>
       <span class="track" data-tip="E${k + 1}: fórmula e interpretación ${nf1.format(30 * f)} de 30 en promedio"><i style="width:${(100 * f).toFixed(1)}%;background:var(--u${k + 1});opacity:.55"></i></span><span class="v">${pct(f)}</span>`;
   }).join("");
-  const items = d.ejercicios.map((e, k) => `<h3 style="margin:10px 0 4px">E${k + 1} · ${esc(NOMBRE_EJ[k] || e.id)}</h3>` + e.items.map(id => {
+  const items = d.ejercicios.map((e, k) => `<h3 style="margin:10px 0 4px">E${k + 1} · ${esc((NOMBRES_EJ[tab] || [])[k] || e.id)}</h3>` + e.items.map(id => {
     const n = ent.length, ok = ent.filter(p => p.detalle && p.detalle[id] === 1).length, x = n ? ok / n : 0;
-    return `<div class="qrow tq" data-tip="${esc(ETQ[id] || id)}: ${ok} de ${n} parejas"><span class="n">${esc(ETQ[id] || id)}</span>
+    return `<div class="qrow tq" data-tip="${esc((ETQ_T[tab] || {})[id] || id)}: ${ok} de ${n} parejas"><span class="n">${esc((ETQ_T[tab] || {})[id] || id)}</span>
       <span class="track"><i style="width:${(100 * x).toFixed(1)}%;background:var(--u${k + 1})"></i></span><span class="v">${pct(x)}</span></div>`;
   }).join("")).join("");
   const cols = [["id", "Pareja", false], ["auto", "Auto /70", true]].concat(d.ejercicios.map((e, k) => ["e" + k, "E" + (k + 1) + " /70", true]), [["envios", "Envíos", true], ["notebook", "Notebook", true], ["fecha", "Última entrega", false]]);
@@ -835,7 +850,7 @@ $app.addEventListener("click", e => {
   else if (a === "filtro") { vista.filtro = v; render(); }
   else if (a === "sort") { vista.sortDir = vista.sortK === v ? -vista.sortDir : (v === "nombre" ? 1 : -1); vista.sortK = v; render(); }
   else if (a === "actualizar") cargar(sget("diag-prof") || "");
-  else if (a === "tab") { tab = v; render(); if (v !== "diag" && (!taller.datos || taller.datos.taller !== (TALLERES_PROF.find(t => t.id === v) || {}).nombre)) cargarTaller(v); }
+  else if (a === "tab") { tab = v; render(); if (v !== "diag" && (!taller.datos || taller.datos.taller !== (TALLERES_PROF.find(t => t.id === v) || {}).nombre)) { taller.datos = null; cargarTaller(v); } }
   else if (a === "actualizar-taller") cargarTaller(tab);
   else if (a === "sort-t") { taller.sortDir = taller.sortK === v ? -taller.sortDir : (v === "id" || v === "fecha" ? 1 : -1); taller.sortK = v; render(); }
   else if (a === "salir") { sset("diag-prof", null); datos = null; taller.datos = null; tab = "diag"; render(); }
